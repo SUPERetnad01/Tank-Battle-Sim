@@ -364,7 +364,7 @@ Sprite::~Sprite()
 {
     delete m_Surface;
     for (unsigned int i = 0; i < m_NumFrames; i++) delete m_Start[i];
-    delete m_Start;
+    delete[] m_Start;
 }
 
 void Sprite::Draw(Surface* a_Target, int a_X, int a_Y)
@@ -538,9 +538,9 @@ Font::Font(const char* a_File, const char* a_Chars)
 Font::~Font()
 {
     delete m_Surface;
-    delete m_Trans;
-    delete m_Width;
-    delete m_Offset;
+    delete[] m_Trans;
+    delete[] m_Width;
+    delete[] m_Offset;
 }
 
 int Font::Width(const char* a_Text)
