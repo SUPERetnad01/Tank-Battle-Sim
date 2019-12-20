@@ -1,6 +1,6 @@
 #pragma once
 
-namespace Tmpl8
+namespace BattleSim
 {
 //forward declarations
 class Tank;
@@ -57,4 +57,4 @@ class Game
     bool lock_update = false;
 };
 
-}; // namespace Tmpl8
+}; // namespace BattleSim

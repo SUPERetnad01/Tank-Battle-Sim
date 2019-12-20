@@ -13,7 +13,7 @@
 
 #include "precomp.h"
 
-namespace Tmpl8
+namespace BattleSim
 {
 
 // Math Stuff
@@ -102,9 +102,9 @@ void NotifyUser(const char* s)
 #endif
     exit(0);
 }
-} // namespace Tmpl8
+} // namespace BattleSim
 
-using namespace Tmpl8;
+using namespace BattleSim;
 using namespace std;
 
 #ifdef ADVANCEDGL

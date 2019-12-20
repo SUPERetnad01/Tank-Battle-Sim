@@ -53,7 +53,7 @@ inline uint RandomUInt()
 inline float RandomFloat() { return RandomUInt() * 2.3283064365387e-10f; }
 inline float Rand(float range) { return RandomFloat() * range; }
 
-namespace Tmpl8
+namespace BattleSim
 {
 
 struct timer
@@ -588,4 +588,4 @@ vec4 operator*(const vec4& a, const mat4& b);
 
 #define BADFLOAT(x) ((*(uint*)&x & 0x7f000000) == 0x7f000000)
 
-}; // namespace Tmpl8
+}; // namespace BattleSim

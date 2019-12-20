@@ -1,6 +1,6 @@
 #pragma once
 
-namespace Tmpl8
+namespace BattleSim
 {
 
 enum allignments
@@ -56,4 +56,4 @@ class Tank
 
 };
 
-} // namespace Tmpl8
+} // namespace BattleSim

@@ -1,7 +1,7 @@
 #include "particle_beam.h"
 #include "precomp.h"
 
-namespace Tmpl8
+namespace BattleSim
 {
 
 Particle_beam::Particle_beam() : min_position(), max_position(), particle_beam_sprite(nullptr), sprite_frame(0), rectangle(), damage(1)
@@ -36,4 +36,4 @@ void Particle_beam::Draw(Surface* screen)
     particle_beam_sprite->Draw(screen, (int)(position.x - offsetX), (int)(position.y - offsetY));
 }
 
-} // namespace Tmpl8
+} // namespace BattleSim

@@ -1,6 +1,6 @@
 #include "smoke.h"
 #include "precomp.h"
-namespace Tmpl8
+namespace BattleSim
 {
 
 void Smoke::Tick()
@@ -15,4 +15,4 @@ void Smoke::Draw(Surface* screen)
     smoke_sprite.Draw(screen, (int)position.x, (int)position.y);
 }
 
-} // namespace Tmpl8
+} // namespace BattleSim

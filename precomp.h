@@ -77,7 +77,7 @@ using namespace std;
 #include "surface.h"
 #include "template.h"
 
-using namespace Tmpl8;
+using namespace BattleSim;
 
 #include "ThreadPool.h"
 

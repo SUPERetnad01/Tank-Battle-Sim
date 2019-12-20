@@ -1,7 +1,7 @@
 #include "Rocket.h"
 #include "precomp.h"
 
-namespace Tmpl8
+namespace BattleSim
 {
 Rocket::Rocket(vec2 position, vec2 direction, float collision_radius, allignments allignment, Sprite* rocket_sprite)
     : position(position), speed(direction), collision_radius(collision_radius), allignment(allignment), current_frame(0), rocket_sprite(rocket_sprite), active(true)
@@ -41,4 +41,4 @@ bool Rocket::Intersects(vec2 position_other, float radius_other) const
     }
 }
 
-} // namespace Tmpl8
+} // namespace BattleSim
