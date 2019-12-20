@@ -3,7 +3,7 @@
 
 #include "precomp.h"
 
-namespace Tmpl8
+namespace BattleSim
 {
 
 void NotifyUser(const char* s);
@@ -608,4 +608,4 @@ void Font::Print(Surface* a_Target, const char* a_Text, int a_X, int a_Y, bool c
     }
 }
 
-}; // namespace Tmpl8
+}; // namespace BattleSim

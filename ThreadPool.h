@@ -1,6 +1,6 @@
 #pragma once
 
-namespace Tmpl8
+namespace BattleSim
 {
 
 class ThreadPool; //Forward declare
@@ -96,4 +96,4 @@ inline void Worker::operator()()
     }
 }
 
-} // namespace Tmpl8
+} // namespace BattleSim

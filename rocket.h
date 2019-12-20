@@ -1,6 +1,6 @@
 #pragma once
 
-namespace Tmpl8
+namespace BattleSim
 {
 
 class Rocket
@@ -27,4 +27,4 @@ class Rocket
     Sprite* rocket_sprite;
 };
 
-} // namespace Tmpl8
+} // namespace BattleSim

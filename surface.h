@@ -3,7 +3,7 @@
 
 #pragma once
 
-namespace Tmpl8
+namespace BattleSim
 {
 
 #define REDMASK (0xff0000)
@@ -161,4 +161,4 @@ class Font
     int m_CY2 = 0;
 };
 
-}; // namespace Tmpl8
+}; // namespace BattleSim

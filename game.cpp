@@ -17,7 +17,7 @@
 #define MAX_FRAMES 2000
 
 //Global performance timer
-#define REF_PERFORMANCE 59897.2 //UPDATE THIS WITH YOUR REFERENCE PERFORMANCE (see console after 2k frames)
+#define REF_PERFORMANCE 73466 //UPDATE THIS WITH YOUR REFERENCE PERFORMANCE (see console after 2k frames)
 static timer perf_timer;
 static float duration;
 
@@ -281,7 +281,7 @@ void Game::Draw()
 // -----------------------------------------------------------
 // Sort tanks by health value using insertion sort
 // -----------------------------------------------------------
-void Tmpl8::Game::insertion_sort_tanks_health(const std::vector<Tank>& original, std::vector<const Tank*>& sorted_tanks, UINT16 begin, UINT16 end)
+void BattleSim::Game::insertion_sort_tanks_health(const std::vector<Tank>& original, std::vector<const Tank*>& sorted_tanks, UINT16 begin, UINT16 end)
 {
     const UINT16 NUM_TANKS = end - begin;
     sorted_tanks.reserve(NUM_TANKS);
@@ -315,7 +315,7 @@ void Tmpl8::Game::insertion_sort_tanks_health(const std::vector<Tank>& original,
 // Updating REF_PERFORMANCE at the top of this file with the value
 // on your machine gives you an idea of the speedup your optimizations give
 // -----------------------------------------------------------
-void Tmpl8::Game::MeasurePerformance()
+void BattleSim::Game::MeasurePerformance()
 {
     char buffer[128];
     if (frame_count >= MAX_FRAMES)

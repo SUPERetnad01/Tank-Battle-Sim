@@ -1,7 +1,7 @@
 #include "Tank.h"
 #include "precomp.h"
 
-namespace Tmpl8
+namespace BattleSim
 {
 Tank::Tank(
     float pos_x,
@@ -98,4 +98,4 @@ void Tank::Push(vec2 direction, float magnitude)
     force += direction * magnitude;
 }
 
-} // namespace Tmpl8
+} // namespace BattleSim
