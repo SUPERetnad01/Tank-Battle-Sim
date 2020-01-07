@@ -17,7 +17,7 @@
 #define MAX_FRAMES 2000
 
 //Global performance timer
-#define REF_PERFORMANCE 59897.2 //UPDATE THIS WITH YOUR REFERENCE PERFORMANCE (see console after 2k frames)
+#define REF_PERFORMANCE 73804.1 //UPDATE THIS WITH YOUR REFERENCE PERFORMANCE (see console after 2k frames)
 static timer perf_timer;
 static float duration;
 
@@ -69,12 +69,12 @@ void Game::Init()
     //Spawn blue tanks
     for (int i = 0; i < NUM_TANKS_BLUE; i++)
     {
-        tanks.push_back(Tank(start_blue_x + ((i % max_rows) * spacing), start_blue_y + ((i / max_rows) * spacing), BLUE, &tank_blue, &smoke, 1200, 600, tank_radius, TANK_MAX_HEALTH, TANK_MAX_SPEED));
+        tanks.push_back(Tank(&grid,start_blue_x + ((i % max_rows) * spacing), start_blue_y + ((i / max_rows) * spacing), BLUE, &tank_blue, &smoke, 1200, 600, tank_radius, TANK_MAX_HEALTH, TANK_MAX_SPEED));
     }
     //Spawn red tanks
     for (int i = 0; i < NUM_TANKS_RED; i++)
     {
-        tanks.push_back(Tank(start_red_x + ((i % max_rows) * spacing), start_red_y + ((i / max_rows) * spacing), RED, &tank_red, &smoke, 80, 80, tank_radius, TANK_MAX_HEALTH, TANK_MAX_SPEED));
+        tanks.push_back(Tank(&grid,start_red_x + ((i % max_rows) * spacing), start_red_y + ((i / max_rows) * spacing), RED, &tank_red, &smoke, 80, 80, tank_radius, TANK_MAX_HEALTH, TANK_MAX_SPEED));
     }
 
     particle_beams.push_back(Particle_beam(vec2(SCRWIDTH / 2, SCRHEIGHT / 2), vec2(100, 50), &particle_beam_sprite, PARTICLE_BEAM_HIT_VALUE));
@@ -123,40 +123,7 @@ Tank& Game::FindClosestEnemy(Tank& current_tank)
 void Game::Update(float deltaTime)
 {
     //Update tanks
-    for (Tank& tank : tanks)
-    {
-        if (tank.active)
-        {
-            //Check tank collision and nudge tanks away from each other
-            for (Tank& oTank : tanks)
-            {
-                if (&tank == &oTank) continue;
-
-                vec2 dir = tank.Get_Position() - oTank.Get_Position();
-                float dirSquaredLen = dir.sqrLength();
-
-                float colSquaredLen = (tank.Get_collision_radius() * tank.Get_collision_radius()) + (oTank.Get_collision_radius() * oTank.Get_collision_radius());
-
-                if (dirSquaredLen < colSquaredLen)
-                {
-                    tank.Push(dir.normalized(), 1.f);
-                }
-            }
-
-            //Move tanks according to speed and nudges (see above) also reload
-            tank.Tick();
-
-            //Shoot at closest target if reloaded
-            if (tank.Rocket_Reloaded())
-            {
-                Tank& target = FindClosestEnemy(tank);
-
-                rockets.push_back(Rocket(tank.position, (target.Get_Position() - tank.position).normalized() * 3, rocket_radius, tank.allignment, ((tank.allignment == RED) ? &rocket_red : &rocket_blue)));
-
-                tank.Reload_Rocket();
-            }
-        }
-    }
+    UpdateTanks();
 
     //Update smoke plumes
     for (Smoke& _smoke : smokes)
@@ -165,48 +132,13 @@ void Game::Update(float deltaTime)
     }
 
     //Update rockets
-    for (Rocket& rocket : rockets)
-    {
-        rocket.Tick();
-
-        //Check if rocket collides with enemy tank, spawn explosion and if tank is destroyed spawn a smoke plume
-        for (Tank& tank : tanks)
-        {
-            if (tank.active && (tank.allignment != rocket.allignment) && rocket.Intersects(tank.position, tank.collision_radius))
-            {
-                explosions.push_back(Explosion(&explosion, tank.position));
-
-                if (tank.hit(ROCKET_HIT_VALUE))
-                {
-                    smokes.push_back(Smoke(smoke, tank.position - vec2(0, 48)));
-                }
-
-                rocket.active = false;
-                break;
-            }
-        }
-    }
+    UpdateRockets();
 
     //Remove exploded rockets with remove erase idiom
     rockets.erase(std::remove_if(rockets.begin(), rockets.end(), [](const Rocket& rocket) { return !rocket.active; }), rockets.end());
 
     //Update particle beams
-    for (Particle_beam& particle_beam : particle_beams)
-    {
-        particle_beam.tick(tanks);
-
-        //Damage all tanks within the damage window of the beam (the window is an axis-aligned bounding box)
-        for (Tank& tank : tanks)
-        {
-            if (tank.active && particle_beam.rectangle.intersectsCircle(tank.Get_Position(), tank.Get_collision_radius()))
-            {
-                if (tank.hit(particle_beam.damage))
-                {
-                    smokes.push_back(Smoke(smoke, tank.position - vec2(0, 48)));
-                }
-            }
-        }
-    }
+    UpdateParticalBeams();
 
     //Update explosion sprites and remove when done with remove erase idiom
     for (Explosion& _explosion : explosions)
@@ -338,6 +270,75 @@ void BattleSim::Game::MeasurePerformance()
         frame_count_font->Centre(screen, buffer, 200);
         sprintf(buffer, "SPEEDUP: %4.1f", REF_PERFORMANCE / duration);
         frame_count_font->Centre(screen, buffer, 340);
+    }
+}
+
+void BattleSim::Game::UpdateTanks()
+{
+    for (Tank& tank : tanks)
+    {
+        if (tank.allignment == RED)
+        {
+            int x = 0;
+        }
+        tank.Tick();
+
+        if (tank.Rocket_Reloaded())
+        {
+            Tank& target = FindClosestEnemy(tank);
+
+            rockets.push_back(
+                Rocket(tank.position, (target.Get_Position() - tank.position).normalized() * 3, rocket_radius,
+                       tank.allignment, ((tank.allignment == RED) ? &rocket_red : &rocket_blue)));
+
+            tank.Reload_Rocket();
+        }
+    }
+}
+
+void BattleSim::Game::UpdateRockets()
+{
+    for (Rocket& rocket : rockets)
+    {
+        rocket.Tick();
+
+        //Check if rocket collides with enemy tank, spawn explosion and if tank is destroyed spawn a smoke plume
+        for (Tank& tank : tanks)
+        {
+            if (tank.active && (tank.allignment != rocket.allignment) &&
+                rocket.Intersects(tank.position, tank.collision_radius))
+            {
+                explosions.push_back(Explosion(&explosion, tank.position));
+                if (tank.hit(ROCKET_HIT_VALUE))
+                {
+                    smokes.push_back(Smoke(smoke, tank.position - vec2(0, 48)));
+                }
+
+                rocket.active = false;
+                break;
+            }
+        }
+    }
+}
+
+void BattleSim::Game::UpdateParticalBeams()
+{
+    for (Particle_beam& particle_beam : particle_beams)
+    {
+        particle_beam.tick(tanks);
+
+        //Damage all tanks within the damage window of the beam (the window is an axis-aligned bounding box)
+        for (Tank& tank : tanks)
+        {
+            if (tank.active &&
+                particle_beam.rectangle.intersectsCircle(tank.Get_Position(), tank.Get_collision_radius()))
+            {
+                if (tank.hit(particle_beam.damage))
+                {
+                    smokes.push_back(Smoke(smoke, tank.position - vec2(0, 48)));
+                }
+            }
+        }
     }
 }
 

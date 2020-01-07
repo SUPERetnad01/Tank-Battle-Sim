@@ -7,6 +7,7 @@ class Tank;
 class Rocket;
 class Smoke;
 class Particle_beam;
+class Grid;
 
 class Game
 {
@@ -19,6 +20,9 @@ class Game
     void Tick(float deltaTime);
     void insertion_sort_tanks_health(const std::vector<Tank>& original, std::vector<const Tank*>& sorted_tanks, UINT16 begin, UINT16 end);
     void MeasurePerformance();
+    void UpdateTanks();
+    void UpdateRockets();
+    void UpdateParticalBeams();
 
     Tank& FindClosestEnemy(Tank& current_tank);
 
@@ -53,7 +57,7 @@ class Game
 
     Font* frame_count_font;
     long long frame_count = 0;
-
+    Grid grid;
     bool lock_update = false;
 };
 

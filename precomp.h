@@ -86,6 +86,7 @@ using namespace BattleSim;
 #include "smoke.h"
 #include "explosion.h"
 #include "particle_beam.h"
+#include "Grid.h"
 
 #include "game.h"
 

@@ -9,16 +9,7 @@ namespace BattleSim
 class Grid
 {
   public:
-    Grid(){
-        //clear the grid
-        for (int x = 0; x < numberOfCells; x++)
-        {
-            for (int y = 0; y < numberOfCells; ++y)
-            {
-                cells_[x][y] = NULL;
-            }
-        }
-    };
+    Grid();
       ~Grid();
       void handleTank(Tank* tank, Tank* other);
       void addTank2Cell(Tank* tank);
@@ -26,9 +17,8 @@ class Grid
       void moveTank2NewCell(Tank* tank, vec2 targetPosition);
 
       bool collision(Tank* tank, Tank* other);
-      void handlePush();
       static const int numberOfCells = 1000;
-      static const int sizeOfCell = 20;
+      static const int sizeOfCell = 18;
 
     private:
       Tank* cells_[numberOfCells][numberOfCells];

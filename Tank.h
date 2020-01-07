@@ -11,8 +11,9 @@ enum allignments
 
 class Tank
 {
+    friend class Grid;
   public:
-    Tank(float pos_x, float pos_y, allignments allignment, Sprite* tank_sprite, Sprite* smoke_sprite, float tar_x, float tar_y, float collision_radius, int health, float max_speed);
+    Tank(Grid *grid ,float pos_x, float pos_y, allignments allignment, Sprite* tank_sprite, Sprite* smoke_sprite, float tar_x, float tar_y, float collision_radius, int health, float max_speed);
 
     ~Tank();
 
@@ -23,7 +24,7 @@ class Tank
     bool Rocket_Reloaded() const { return reloaded; };
 
     void Reload_Rocket();
-
+    void addTank();
     void Deactivate();
     bool hit(int hit_value);
 
@@ -53,6 +54,12 @@ class Tank
     int current_frame;
     Sprite* tank_sprite;
     Sprite* smoke_sprite;
+
+  private:
+    Tank* next_;
+    Tank* prev_;
+    Grid* grid;
+
 
 };
 
