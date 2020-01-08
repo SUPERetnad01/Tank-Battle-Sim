@@ -17,7 +17,9 @@
 #define MAX_FRAMES 2000
 
 //Global performance timer
-#define REF_PERFORMANCE 73804.1 //UPDATE THIS WITH YOUR REFERENCE PERFORMANCE (see console after 2k frames)
+//dante's preformance  = 74318.2
+// gert preformance = 73804.1
+#define REF_PERFORMANCE 62270.7 //UPDATE THIS WITH YOUR REFERENCE PERFORMANCE (see console after 2k frames)
 static timer perf_timer;
 static float duration;
 
@@ -277,47 +279,45 @@ void BattleSim::Game::UpdateTanks()
 {
     for (Tank& tank : tanks)
     {
-        if (tank.allignment == RED)
-        {
-            int x = 0;
-        }
-        tank.Tick();
+        if (tank.active) {
+            tank.Tick();
+            if (tank.Rocket_Reloaded())
+            {
+                Tank& target = FindClosestEnemy(tank);
 
-        if (tank.Rocket_Reloaded())
-        {
-            Tank& target = FindClosestEnemy(tank);
-
-            rockets.push_back(
-                Rocket(tank.position, (target.Get_Position() - tank.position).normalized() * 3, rocket_radius,
-                       tank.allignment, ((tank.allignment == RED) ? &rocket_red : &rocket_blue)));
-
-            tank.Reload_Rocket();
+                rockets.push_back(
+                    Rocket(&grid,tank.position, (target.Get_Position() - tank.position).normalized() * 3, rocket_radius,
+                            tank.allignment, ((tank.allignment == RED) ? &rocket_red : &rocket_blue)));
+                tank.Reload_Rocket();
+            }
         }
     }
 }
 
 void BattleSim::Game::UpdateRockets()
+
+
 {
     for (Rocket& rocket : rockets)
     {
         rocket.Tick();
+        if (rocket.hitTarget)
+        {
+            
+            
+            Tank* tank = rocket.hitTank;
+            explosions.push_back(Explosion(&explosion, tank->position));
+            if (tank->hit(ROCKET_HIT_VALUE))
+            {
+                smokes.push_back(Smoke(smoke, tank->position - vec2(0, 48)));
+            }
+            rocket.active = false;
+            //break;
+        }
+        
 
         //Check if rocket collides with enemy tank, spawn explosion and if tank is destroyed spawn a smoke plume
-        for (Tank& tank : tanks)
-        {
-            if (tank.active && (tank.allignment != rocket.allignment) &&
-                rocket.Intersects(tank.position, tank.collision_radius))
-            {
-                explosions.push_back(Explosion(&explosion, tank.position));
-                if (tank.hit(ROCKET_HIT_VALUE))
-                {
-                    smokes.push_back(Smoke(smoke, tank.position - vec2(0, 48)));
-                }
-
-                rocket.active = false;
-                break;
-            }
-        }
+           
     }
 }
 
