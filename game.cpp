@@ -161,35 +161,62 @@ void Game::Draw()
     background.Draw(screen, 0, 0);
 
     //Draw sprites
-    for (int i = 0; i < NUM_TANKS_BLUE + NUM_TANKS_RED; i++)
-    {
-        tanks.at(i).Draw(screen);
 
-        vec2 tPos = tanks.at(i).Get_Position();
-        // tread marks
-        if ((tPos.x >= 0) && (tPos.x < SCRWIDTH) && (tPos.y >= 0) && (tPos.y < SCRHEIGHT))
-            background.GetBuffer()[(int)tPos.x + (int)tPos.y * SCRWIDTH] = SubBlend(background.GetBuffer()[(int)tPos.x + (int)tPos.y * SCRWIDTH], 0x808080);
-    }
+    //*Draw Tanks*
+    //for (int i = 0; i < NUM_TANKS_BLUE + NUM_TANKS_RED; i++)
+    tbb::parallel_for(tbb::blocked_range<int>(1, NUM_TANKS_BLUE + NUM_TANKS_RED),
+                      [&](tbb::blocked_range<int> r) {
 
-    for (Rocket& rocket : rockets)
-    {
-        rocket.Draw(screen);
-    }
+                          for (int i = r.begin(); i < r.end(); ++i)
+                          {
+                              tanks.at(i).Draw(screen);
 
-    for (Smoke& _smoke : smokes)
-    {
-        _smoke.Draw(screen);
-    }
+                              vec2 tPos = tanks.at(i).Get_Position();
+                              // tread marks
+                              if ((tPos.x >= 0) && (tPos.x < SCRWIDTH) && (tPos.y >= 0) && (tPos.y < SCRHEIGHT))
+                                  background.GetBuffer()[(int)tPos.x + (int)tPos.y * SCRWIDTH] = SubBlend(
+                                      background.GetBuffer()[(int)tPos.x + (int)tPos.y * SCRWIDTH], 0x808080);
+                          }
+                      });
 
-    for (Particle_beam& particle_beam : particle_beams)
-    {
-        particle_beam.Draw(screen);
-    }
+    //*Draw Rockets*
+    //for (Rocket& rocket : rockets)
+    tbb::parallel_for(tbb::blocked_range<int>(1, rockets.size()),
+                      [&](tbb::blocked_range<int> r) {
+                          for (int i = r.begin(); i < r.end(); ++i)
+                          {
+                              rockets[i].Draw(screen);
+                          }
+                      });
 
-    for (Explosion& _explosion : explosions)
-    {
-        _explosion.Draw(screen);
-    }
+    //*Draw Smoke*
+    //for (Smoke& _smoke : smokes)
+    tbb::parallel_for(tbb::blocked_range<int>(1, smokes.size()),
+                      [&](tbb::blocked_range<int> r) {
+                          for (int i = r.begin(); i < r.end(); ++i)
+                          {
+                              smokes[i].Draw(screen);
+                          }
+                      });
+
+    //*Draw Particle_beam*
+    //for (Particle_beam& particle_beam : particle_beams)
+    tbb::parallel_for(tbb::blocked_range<int>(1, particle_beams.size()),
+                      [&](tbb::blocked_range<int> r) {
+                          for (int i = r.begin(); i < r.end(); ++i) {
+                              particle_beams[i].Draw(screen);
+                          }
+                      });
+
+    //*Draw Explosion*
+    //for (Explosion& _explosion : explosions)
+    tbb::parallel_for(tbb::blocked_range<int>(1, explosions.size()),
+                      [&](tbb::blocked_range<int> r) {
+                          for (int i = r.begin(); i < r.end(); ++i)
+                          {
+                              explosions[i].Draw(screen);
+                          }
+                      });
 
     //Draw sorted health bars
     for (int t = 0; t < 2; t++)
