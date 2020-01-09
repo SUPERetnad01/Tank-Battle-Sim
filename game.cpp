@@ -17,9 +17,10 @@
 #define MAX_FRAMES 2000
 
 //Global performance timer
-//dante's preformance  = 74318.2
-// gert preformance = 73804.1
-#define REF_PERFORMANCE 62270.7 //UPDATE THIS WITH YOUR REFERENCE PERFORMANCE (see console after 2k frames)
+// dante's performance  = 74318.2
+// gert performance = 73804.1
+// kevin's performance = 63243.3
+#define REF_PERFORMANCE 63243.3 //UPDATE THIS WITH YOUR REFERENCE PERFORMANCE (see console after 2k frames)
 static timer perf_timer;
 static float duration;
 
