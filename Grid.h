@@ -11,14 +11,14 @@ class Grid
   public:
     Grid();
       ~Grid();
-      void handleTank(Tank* tank, Tank* other);
+      bool handleTank(Tank* tank, Tank* other);
       void addTank2Cell(Tank* tank);
       void addRocket2Cell(Rocket* rocket);
-      void handleCell(int x, int y);
+      void handleTankCell(int x , int y);
       void moveTank2NewCell(Tank* tank, vec2 oldPosition);
       void moveRocket2NewCell(Rocket* rocket, vec2 oldPosition);
       void handelRocket(Rocket* rocket,Tank* tank);
-      void collision(Tank* tank, Tank* other);
+      bool collision(Tank* tank, Tank* other ,vec2 direction);
       void handelRocketCell(int x, int y);
       static const int numberOfCells = 1000;
       static const int sizeOfCell = 26;

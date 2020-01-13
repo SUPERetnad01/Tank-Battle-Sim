@@ -14,7 +14,9 @@ Tank::Tank(Grid* grid_,
            float collision_radius,
            int health,
            float max_speed)
-    : next_(NULL),
+    : CellX(NULL),
+      CellY(NULL),
+    next_(NULL),
       prev_(NULL),
       grid(grid_),
       position(pos_x, pos_y),
@@ -55,6 +57,7 @@ Tank::Tank(Grid* grid_,
 
         force = vec2(0.f, 0.f);
         this->grid->moveTank2NewCell(this, oldposition);
+        this->grid->handleTankCell(CellX,CellY);
         if (++current_frame > 8) current_frame = 0;
     }
 

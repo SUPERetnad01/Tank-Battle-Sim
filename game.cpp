@@ -331,12 +331,13 @@ void BattleSim::Game::UpdateRockets()
         rocket.Tick();
         if (rocket.hitTarget)
         {
-            
-            
             Tank* tank = rocket.hitTank;
             explosions.push_back(Explosion(&explosion, tank->position));
             if (tank->hit(ROCKET_HIT_VALUE))
             {
+                if (tank->active == false) {
+                    //tanks.erase(std::remove(tanks.begin(), tanks.end(), tanks), tanks.end());
+                }
                 smokes.push_back(Smoke(smoke, tank->position - vec2(0, 48)));
             }
             rocket.active = false;

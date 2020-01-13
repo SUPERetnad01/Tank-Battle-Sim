@@ -51,6 +51,9 @@ class Tank
 
     allignments allignment;
 
+    int CellX;
+    int CellY;
+
     int current_frame;
     Sprite* tank_sprite;
     Sprite* smoke_sprite;
@@ -59,6 +62,7 @@ class Tank
     Tank* next_;
     Tank* prev_;
     Grid* grid;
+    
 
 
 };
