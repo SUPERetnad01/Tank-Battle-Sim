@@ -164,7 +164,7 @@ void Game::Draw()
 
     //*Draw Tanks*
     //for (int i = 0; i < NUM_TANKS_BLUE + NUM_TANKS_RED; i++)
-    tbb::parallel_for(tbb::blocked_range<int>(1, NUM_TANKS_BLUE + NUM_TANKS_RED),
+    tbb::parallel_for(tbb::blocked_range<int>(0, NUM_TANKS_BLUE + NUM_TANKS_RED),
                       [&](tbb::blocked_range<int> r) {
 
                           for (int i = r.begin(); i < r.end(); ++i)
@@ -181,7 +181,7 @@ void Game::Draw()
 
     //*Draw Rockets*
     //for (Rocket& rocket : rockets)
-    tbb::parallel_for(tbb::blocked_range<int>(1, rockets.size()),
+    tbb::parallel_for(tbb::blocked_range<int>(0, rockets.size()),
                       [&](tbb::blocked_range<int> r) {
                           for (int i = r.begin(); i < r.end(); ++i)
                           {
@@ -191,7 +191,7 @@ void Game::Draw()
 
     //*Draw Smoke*
     //for (Smoke& _smoke : smokes)
-    tbb::parallel_for(tbb::blocked_range<int>(1, smokes.size()),
+    tbb::parallel_for(tbb::blocked_range<int>(0, smokes.size()),
                       [&](tbb::blocked_range<int> r) {
                           for (int i = r.begin(); i < r.end(); ++i)
                           {
@@ -201,7 +201,7 @@ void Game::Draw()
 
     //*Draw Particle_beam*
     //for (Particle_beam& particle_beam : particle_beams)
-    tbb::parallel_for(tbb::blocked_range<int>(1, particle_beams.size()),
+    tbb::parallel_for(tbb::blocked_range<int>(0, particle_beams.size()),
                       [&](tbb::blocked_range<int> r) {
                           for (int i = r.begin(); i < r.end(); ++i) {
                               particle_beams[i].Draw(screen);
@@ -210,7 +210,7 @@ void Game::Draw()
 
     //*Draw Explosion*
     //for (Explosion& _explosion : explosions)
-    tbb::parallel_for(tbb::blocked_range<int>(1, explosions.size()),
+    tbb::parallel_for(tbb::blocked_range<int>(0, explosions.size()),
                       [&](tbb::blocked_range<int> r) {
                           for (int i = r.begin(); i < r.end(); ++i)
                           {
