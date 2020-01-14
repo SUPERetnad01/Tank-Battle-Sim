@@ -12,6 +12,7 @@ class Grid;
 class Game
 {
   public:
+    ~Game();
     void SetTarget(Surface* surface) { screen = surface; }
     void Init();
     void Shutdown();

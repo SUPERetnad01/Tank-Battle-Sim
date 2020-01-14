@@ -49,6 +49,8 @@ const static vec2 rocket_size(25, 24);
 const static float tank_radius = 12.f;
 const static float rocket_radius = 10.f;
 
+mutex mtx;
+
 // -----------------------------------------------------------
 // Initialize the application
 // -----------------------------------------------------------
@@ -90,6 +92,11 @@ void Game::Init()
 // -----------------------------------------------------------
 void Game::Shutdown()
 {
+}
+
+Game::~Game()
+{
+    delete frame_count_font;
 }
 
 // -----------------------------------------------------------
@@ -305,6 +312,29 @@ void BattleSim::Game::MeasurePerformance()
 
 void BattleSim::Game::UpdateTanks()
 {
+    /*tbb::parallel_for(tbb::blocked_range<int>(0, tanks.size()),
+                      [&](tbb::blocked_range<int> r)
+    {
+                          for (auto i = r.begin(); i < r.end(); i++)
+                          {
+                              Tank& tank = tanks[i];
+                              if (tank.active)
+                              {
+                                  tank.Tick();
+                                  if (tank.Rocket_Reloaded())
+                                  {
+                                      Tank& target = FindClosestEnemy(tank);
+
+                                      scoped_lock lock(mtx);
+                                      rockets.push_back(
+                                          Rocket(&grid, tank.position, (target.Get_Position() - tank.position).normalized() * 3, rocket_radius,
+                                                 tank.allignment, ((tank.allignment == RED) ? &rocket_red : &rocket_blue)));
+                                      tank.Reload_Rocket();
+                                  }
+                              }
+                          }
+    });*/
+
     for (Tank& tank : tanks)
     {
         if (tank.active) {
@@ -352,23 +382,30 @@ void BattleSim::Game::UpdateRockets()
 
 void BattleSim::Game::UpdateParticalBeams()
 {
-    for (Particle_beam& particle_beam : particle_beams)
+    tbb::parallel_for(tbb::blocked_range<int>(0, particle_beams.size()),
+                      [&](tbb::blocked_range<int> r)
     {
-        particle_beam.tick(tanks);
+                          for (int i = r.begin(); i < r.end(); ++i)
+                          {
 
-        //Damage all tanks within the damage window of the beam (the window is an axis-aligned bounding box)
-        for (Tank& tank : tanks)
-        {
-            if (tank.active &&
-                particle_beam.rectangle.intersectsCircle(tank.Get_Position(), tank.Get_collision_radius()))
-            {
-                if (tank.hit(particle_beam.damage))
-                {
-                    smokes.push_back(Smoke(smoke, tank.position - vec2(0, 48)));
-                }
-            }
-        }
-    }
+                              Particle_beam& particle_beam = particle_beams[i];
+                              particle_beam.tick(tanks);
+
+                              //Damage all tanks within the damage window of the beam (the window is an axis-aligned bounding box)
+                              for (Tank& tank : tanks)
+                              {
+                                  if (tank.active &&
+                                      particle_beam.rectangle.intersectsCircle(tank.Get_Position(),
+                                                                               tank.Get_collision_radius()))
+                                  {
+                                      if (tank.hit(particle_beam.damage))
+                                      {
+                                          smokes.push_back(Smoke(smoke, tank.position - vec2(0, 48)));
+                                      }
+                                  }
+                              }
+                          }
+    });
 }
 
 // -----------------------------------------------------------

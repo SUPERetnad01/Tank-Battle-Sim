@@ -1,8 +1,11 @@
-#include "Tank.h"
 #include "precomp.h"
+#include "Tank.h"
+
 
 namespace BattleSim
 {
+mutex grid_mutex;
+
 Tank::Tank(Grid* grid_,
            float pos_x,
            float pos_y,
