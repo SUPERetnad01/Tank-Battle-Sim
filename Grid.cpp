@@ -48,6 +48,10 @@ void BattleSim::Grid::moveTank2NewCell(Tank* tank, vec2 oldposition)
     {
         tank->prev_->next_ = tank->next_;
     }
+    if (tank->next_ != nullptr)
+    {
+        tank->next_->prev_ = tank->prev_;
+    }
 
     if (tank->next_ != nullptr)
     {
