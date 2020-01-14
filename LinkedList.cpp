@@ -6,6 +6,7 @@ LinkedList::LinkedList(){
 
 LinkedList::~LinkedList()
 {
+    delete head;
 }
 
 void LinkedList::InsertValue(int tankinput)
@@ -40,5 +41,6 @@ node::node(int value) : data(value), next(nullptr)
 
 
 node::~node()
-{
+{ 
+    delete next;
 }
