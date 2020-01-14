@@ -23,7 +23,6 @@ void BattleSim::Grid::addTank2Cell(Tank* tank)
 {
     int cellX = (int)((tank->position.x / Grid::sizeOfCell)+gridOffset);
     int cellY = (int)((tank->position.y / Grid::sizeOfCell)+gridOffset);
-    tankcells[cellX][cellY];
     tank->prev_ = nullptr;
     tank->next_ = tankcells[cellX][cellY];
     tankcells[cellX][cellY] = tank;
@@ -82,24 +81,26 @@ void BattleSim::Grid::handleTankCell(int x ,int y)
                 return;
             } //6
         }
-        //if (x > 0) // 4
-        //{
-        //    if (handleTank(tank, tankcells[x - 1][y])) {
-        //    }
-        //}
+        if (x > 0) // 4
+        {
+            if (handleTank(tank, tankcells[x - 1][y])) {
+                return;
+            }
+        }
                                                                 
-        //if (x > 0 && y > 0)
-        //{
-        //    if (handleTank(tank, tankcells[x - 1][y - 1])) {
-        //    }
-        //} // 7
+        if (x > 0 && y > 0)
+        {
+            if (handleTank(tank, tankcells[x - 1][y - 1])) {
+                return;
+            }
+        } // 7
 
-        //if (y > 0)
-        //{
-        //    if (handleTank(tank, tankcells[x][y - 1])) {
-        //    }
-        //  
-        //} // 8
+        if (y > 0)
+        {
+            if (handleTank(tank, tankcells[x][y - 1])) {
+                return;
+            }
+        } // 8
 
         if (x < numberOfCells - 1 && y > 0)
         {
@@ -117,10 +118,8 @@ void BattleSim::Grid::handleTankCell(int x ,int y)
         if (y < numberOfCells - 1){
             if (handleTank(tank, tankcells[x][y + 1])) { return; } // 2
   
-        } 
-    
+        }  
     }
-    
 }
 
 bool BattleSim::Grid::handleTank(Tank* tank, Tank* other)

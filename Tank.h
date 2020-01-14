@@ -57,11 +57,11 @@ class Tank
     int current_frame;
     Sprite* tank_sprite;
     Sprite* smoke_sprite;
-
+    Grid* grid;
   private:
     Tank* next_;
     Tank* prev_;
-    Grid* grid;
+    
     
 
 

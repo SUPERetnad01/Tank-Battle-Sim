@@ -20,7 +20,7 @@
 // dante's performance  = 74318.2
 // gert performance = 73804.1
 // kevin's performance = 63243.3
-#define REF_PERFORMANCE 63243.3 //UPDATE THIS WITH YOUR REFERENCE PERFORMANCE (see console after 2k frames)
+#define REF_PERFORMANCE 74318.2 //UPDATE THIS WITH YOUR REFERENCE PERFORMANCE (see console after 2k frames)
 static timer perf_timer;
 static float duration;
 
@@ -46,6 +46,9 @@ static Sprite particle_beam_sprite(particle_beam_img, 3);
 const static vec2 tank_size(14, 18);
 const static vec2 rocket_size(25, 24);
 
+vector<LinkedList> redHealthBars = {};
+vector<LinkedList> blueHealthBars = {};
+
 const static float tank_radius = 12.f;
 const static float rocket_radius = 10.f;
 
@@ -59,6 +62,8 @@ void Game::Init()
     frame_count_font = new Font("assets/digital_small.png", "ABCDEFGHIJKLMNOPQRSTUVWXYZ:?!=-0123456789.");
 
     tanks.reserve(NUM_TANKS_BLUE + NUM_TANKS_RED);
+    blueTanks.reserve(NUM_TANKS_BLUE);
+    redTanks.reserve(NUM_TANKS_RED);
 
     uint rows = (uint)sqrt(NUM_TANKS_BLUE + NUM_TANKS_RED);
     uint max_rows = 12;
@@ -74,14 +79,20 @@ void Game::Init()
     //Spawn blue tanks
     for (int i = 0; i < NUM_TANKS_BLUE; i++)
     {
-        tanks.push_back(Tank(&grid,start_blue_x + ((i % max_rows) * spacing), start_blue_y + ((i / max_rows) * spacing), BLUE, &tank_blue, &smoke, 1200, 600, tank_radius, TANK_MAX_HEALTH, TANK_MAX_SPEED));
+        tanks.push_back(Tank(&grid, start_blue_x + ((i % max_rows) * spacing), start_blue_y + ((i / max_rows) * spacing), BLUE, &tank_blue, &smoke, 1200, 600, tank_radius, TANK_MAX_HEALTH, TANK_MAX_SPEED));
     }
     //Spawn red tanks
     for (int i = 0; i < NUM_TANKS_RED; i++)
     {
-        tanks.push_back(Tank(&grid,start_red_x + ((i % max_rows) * spacing), start_red_y + ((i / max_rows) * spacing), RED, &tank_red, &smoke, 80, 80, tank_radius, TANK_MAX_HEALTH, TANK_MAX_SPEED));
+        tanks.push_back(Tank(&grid, start_red_x + ((i % max_rows) * spacing), start_red_y + ((i / max_rows) * spacing), RED, &tank_red, &smoke, 80, 80, tank_radius, TANK_MAX_HEALTH, TANK_MAX_SPEED));
     }
-
+    for (auto& tank : tanks)
+    {
+        if (tank.allignment == RED)
+            redTanks.emplace_back(&tank);
+        else
+            blueTanks.emplace_back(&tank);
+    }
     particle_beams.push_back(Particle_beam(vec2(SCRWIDTH / 2, SCRHEIGHT / 2), vec2(100, 50), &particle_beam_sprite, PARTICLE_BEAM_HIT_VALUE));
     particle_beams.push_back(Particle_beam(vec2(80, 80), vec2(100, 50), &particle_beam_sprite, PARTICLE_BEAM_HIT_VALUE));
     particle_beams.push_back(Particle_beam(vec2(1200, 600), vec2(100, 50), &particle_beam_sprite, PARTICLE_BEAM_HIT_VALUE));
@@ -157,6 +168,7 @@ void Game::Update(float deltaTime)
     }
 
     explosions.erase(std::remove_if(explosions.begin(), explosions.end(), [](const Explosion& _explosion) { return _explosion.done(); }), explosions.end());
+    SortHealthBars();
 }
 
 void Game::Draw()
@@ -173,7 +185,6 @@ void Game::Draw()
     //for (int i = 0; i < NUM_TANKS_BLUE + NUM_TANKS_RED; i++)
     tbb::parallel_for(tbb::blocked_range<int>(0, NUM_TANKS_BLUE + NUM_TANKS_RED),
                       [&](tbb::blocked_range<int> r) {
-
                           for (int i = r.begin(); i < r.end(); ++i)
                           {
                               tanks.at(i).Draw(screen);
@@ -210,7 +221,8 @@ void Game::Draw()
     //for (Particle_beam& particle_beam : particle_beams)
     tbb::parallel_for(tbb::blocked_range<int>(0, particle_beams.size()),
                       [&](tbb::blocked_range<int> r) {
-                          for (int i = r.begin(); i < r.end(); ++i) {
+                          for (int i = r.begin(); i < r.end(); ++i)
+                          {
                               particle_beams[i].Draw(screen);
                           }
                       });
@@ -226,57 +238,9 @@ void Game::Draw()
                       });
 
     //Draw sorted health bars
-    for (int t = 0; t < 2; t++)
-    {
-        const UINT16 NUM_TANKS = ((t < 1) ? NUM_TANKS_BLUE : NUM_TANKS_RED);
-
-        const UINT16 begin = ((t < 1) ? 0 : NUM_TANKS_BLUE);
-        std::vector<const Tank*> sorted_tanks;
-        insertion_sort_tanks_health(tanks, sorted_tanks, begin, begin + NUM_TANKS);
-
-        for (int i = 0; i < NUM_TANKS; i++)
-        {
-            int health_bar_start_x = i * (HEALTH_BAR_WIDTH + HEALTH_BAR_SPACING) + HEALTH_BARS_OFFSET_X;
-            int health_bar_start_y = (t < 1) ? 0 : (SCRHEIGHT - HEALTH_BAR_HEIGHT) - 1;
-            int health_bar_end_x = health_bar_start_x + HEALTH_BAR_WIDTH;
-            int health_bar_end_y = (t < 1) ? HEALTH_BAR_HEIGHT : SCRHEIGHT - 1;
-
-            screen->Bar(health_bar_start_x, health_bar_start_y, health_bar_end_x, health_bar_end_y, REDMASK);
-            screen->Bar(health_bar_start_x, health_bar_start_y + (int)((double)HEALTH_BAR_HEIGHT * (1 - ((double)sorted_tanks.at(i)->health / (double)TANK_MAX_HEALTH))), health_bar_end_x, health_bar_end_y, GREENMASK);
-        }
-    }
-}
-
-// -----------------------------------------------------------
-// Sort tanks by health value using insertion sort
-// -----------------------------------------------------------
-void BattleSim::Game::insertion_sort_tanks_health(const std::vector<Tank>& original, std::vector<const Tank*>& sorted_tanks, UINT16 begin, UINT16 end)
-{
-    const UINT16 NUM_TANKS = end - begin;
-    sorted_tanks.reserve(NUM_TANKS);
-    sorted_tanks.emplace_back(&original.at(begin));
-
-    for (int i = begin + 1; i < (begin + NUM_TANKS); i++)
-    {
-        const Tank& current_tank = original.at(i);
-
-        for (int s = (int)sorted_tanks.size() - 1; s >= 0; s--)
-        {
-            const Tank* current_checking_tank = sorted_tanks.at(s);
-
-            if ((current_checking_tank->CompareHealth(current_tank) <= 0))
-            {
-                sorted_tanks.insert(1 + sorted_tanks.begin() + s, &current_tank);
-                break;
-            }
-
-            if (s == 0)
-            {
-                sorted_tanks.insert(sorted_tanks.begin(), &current_tank);
-                break;
-            }
-        }
-    }
+    DrawBlueHealth();
+    DrawRedHealth();
+   
 }
 
 // -----------------------------------------------------------
@@ -337,15 +301,16 @@ void BattleSim::Game::UpdateTanks()
 
     for (Tank& tank : tanks)
     {
-        if (tank.active) {
+        if (tank.active)
+        {
             tank.Tick();
             if (tank.Rocket_Reloaded())
             {
                 Tank& target = FindClosestEnemy(tank);
 
                 rockets.push_back(
-                    Rocket(&grid,tank.position, (target.Get_Position() - tank.position).normalized() * 3, rocket_radius,
-                            tank.allignment, ((tank.allignment == RED) ? &rocket_red : &rocket_blue)));
+                    Rocket(&grid, tank.position, (target.Get_Position() - tank.position).normalized() * 3, rocket_radius,
+                           tank.allignment, ((tank.allignment == RED) ? &rocket_red : &rocket_blue)));
                 tank.Reload_Rocket();
             }
         }
@@ -353,7 +318,6 @@ void BattleSim::Game::UpdateTanks()
 }
 
 void BattleSim::Game::UpdateRockets()
-
 
 {
     for (Rocket& rocket : rockets)
@@ -365,18 +329,12 @@ void BattleSim::Game::UpdateRockets()
             explosions.push_back(Explosion(&explosion, tank->position));
             if (tank->hit(ROCKET_HIT_VALUE))
             {
-                if (tank->active == false) {
-                    //tanks.erase(std::remove(tanks.begin(), tanks.end(), tanks), tanks.end());
-                }
                 smokes.push_back(Smoke(smoke, tank->position - vec2(0, 48)));
             }
             rocket.active = false;
-            //break;
         }
-        
 
         //Check if rocket collides with enemy tank, spawn explosion and if tank is destroyed spawn a smoke plume
-           
     }
 }
 
@@ -408,6 +366,62 @@ void BattleSim::Game::UpdateParticalBeams()
     });
 }
 
+vector<LinkedList> BattleSim::Game::BucketSort(vector<Tank*>& unsortedtanks, int numberofbuckets)
+{
+    vector<LinkedList> buckets(numberofbuckets);
+    for (auto& tank : unsortedtanks)
+    {
+        buckets.at(tank->health > 0  ? tank->health / numberofbuckets : 0).InsertValue(tank->health > 0 ? tank->health : 0);
+    }
+    return buckets;
+}
+
+void BattleSim::Game::SortHealthBars()
+{
+    redHealthBars = BucketSort(redTanks, 100);
+    blueHealthBars = BucketSort(blueTanks, 100);
+}
+
+void BattleSim::Game::DrawBlueHealth()
+{
+    int countBlue = 0;
+    for (auto& bucket : blueHealthBars)
+    {
+        node* currentBlueTank = bucket.head;
+        while (currentBlueTank != nullptr)
+        {
+            DrawHealthBars(countBlue, 'b', currentBlueTank->data);
+            currentBlueTank = currentBlueTank->next;
+            countBlue++;
+        }
+    }
+}
+void BattleSim::Game::DrawHealthBars(int i, char color, int health)
+{
+    int health_bar_start_x = i * (HEALTH_BAR_WIDTH + HEALTH_BAR_SPACING) + HEALTH_BARS_OFFSET_X;
+    int health_bar_start_y = (color == 'b') ? 0 : (SCRHEIGHT - HEALTH_BAR_HEIGHT) - 1;
+    int health_bar_end_x = health_bar_start_x + HEALTH_BAR_WIDTH;
+    int health_bar_end_y = (color == 'b') ? HEALTH_BAR_HEIGHT : SCRHEIGHT - 1;
+
+    screen->Bar(health_bar_start_x, health_bar_start_y, health_bar_end_x, health_bar_end_y, REDMASK);
+    screen->Bar(health_bar_start_x, health_bar_start_y + (int)((double)HEALTH_BAR_HEIGHT * (1 - ((double)health / (double)TANK_MAX_HEALTH))),
+                health_bar_end_x, health_bar_end_y, GREENMASK);
+}
+void BattleSim::Game::DrawRedHealth()
+{
+    int countRed = 0;
+    for (auto& bucket : redHealthBars)
+    {
+        node* currentRedTank = bucket.head;
+        while (currentRedTank != nullptr)
+        {
+            DrawHealthBars(countRed, 'r', currentRedTank->data);
+            currentRedTank = currentRedTank->next;
+            countRed++;
+        }
+    }
+}
+
 // -----------------------------------------------------------
 // Main application tick function
 // -----------------------------------------------------------
@@ -420,12 +434,6 @@ void Game::Tick(float deltaTime)
     Draw();
 
     MeasurePerformance();
-
-    // print something in the graphics window
-    //screen->Print("hello world", 2, 2, 0xffffff);
-
-    // print something to the text window
-    //cout << "This goes to the console window." << std::endl;
 
     //Print frame count
     frame_count++;

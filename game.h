@@ -19,12 +19,15 @@ class Game
     void Update(float deltaTime);
     void Draw();
     void Tick(float deltaTime);
-    void insertion_sort_tanks_health(const std::vector<Tank>& original, std::vector<const Tank*>& sorted_tanks, UINT16 begin, UINT16 end);
     void MeasurePerformance();
     void UpdateTanks();
     void UpdateRockets();
     void UpdateParticalBeams();
-
+    std::vector<LinkedList> BucketSort(std::vector<Tank*> &unsortedTanks,int numberofbuckets);
+    void SortHealthBars();
+    void DrawBlueHealth();
+    void DrawRedHealth();
+    void DrawHealthBars(int i, char color, int health);
     Tank& FindClosestEnemy(Tank& current_tank);
 
     void MouseUp(int button)
@@ -55,6 +58,8 @@ class Game
     vector<Smoke> smokes;
     vector<Explosion> explosions;
     vector<Particle_beam> particle_beams;
+    vector<Tank*> blueTanks;
+    vector<Tank*> redTanks;
 
     Font* frame_count_font;
     long long frame_count = 0;

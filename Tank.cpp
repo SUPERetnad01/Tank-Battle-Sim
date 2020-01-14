@@ -36,7 +36,6 @@ Tank::Tank(Grid* grid_,
       current_frame(0),
       tank_sprite(tank_sprite),
       smoke_sprite(smoke_sprite){
-        //_grid->add(this);
     }
 
     Tank::~Tank()
