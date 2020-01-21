@@ -20,7 +20,7 @@
 // dante's performance  = 74318.2
 // gert performance = 73804.1
 // kevin's performance = 63243.3
-#define REF_PERFORMANCE 74318.2 //UPDATE THIS WITH YOUR REFERENCE PERFORMANCE (see console after 2k frames)
+#define REF_PERFORMANCE 63243.3 //UPDATE THIS WITH YOUR REFERENCE PERFORMANCE (see console after 2k frames)
 static timer perf_timer;
 static float duration;
 
@@ -106,7 +106,6 @@ void Game::Init()
 
         }
     }
-    blueTanksQTree;
     particle_beams.push_back(Particle_beam(vec2(SCRWIDTH / 2, SCRHEIGHT / 2), vec2(100, 50), &particle_beam_sprite, PARTICLE_BEAM_HIT_VALUE));
     particle_beams.push_back(Particle_beam(vec2(80, 80), vec2(100, 50), &particle_beam_sprite, PARTICLE_BEAM_HIT_VALUE));
     particle_beams.push_back(Particle_beam(vec2(1200, 600), vec2(100, 50), &particle_beam_sprite, PARTICLE_BEAM_HIT_VALUE));
@@ -129,8 +128,6 @@ Game::~Game()
 // -----------------------------------------------------------
 Tank& Game::FindClosestEnemy(Tank& current_tank)
     {
-        float closest_distance = numeric_limits<float>::infinity();
-        int closest_index = 0;
         if (current_tank.allignment == RED)
         {
             auto result = blueTanksQTree->FindClosest(current_tank.position, nullptr, numeric_limits<float>::infinity());
