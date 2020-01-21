@@ -8,6 +8,8 @@ class Rocket;
 class Smoke;
 class Particle_beam;
 class Grid;
+class QuadTree;
+class QNode;
 
 class Game
 {
@@ -52,7 +54,7 @@ class Game
 
   private:
     Surface* screen;
-
+    vec2 topright = (SCRWIDTH, SCRHEIGHT);
     vector<Tank> tanks;
     vector<Rocket> rockets;
     vector<Smoke> smokes;
@@ -60,10 +62,11 @@ class Game
     vector<Particle_beam> particle_beams;
     vector<Tank*> blueTanks;
     vector<Tank*> redTanks;
-
     Font* frame_count_font;
+
     long long frame_count = 0;
     Grid grid;
+
     bool lock_update = false;
 };
 

@@ -1,17 +1,17 @@
 #pragma once
-class node
+class LinkedListnode
 {
   public:
-    node();
-    node(int value);
-    ~node();
+    LinkedListnode();
+    LinkedListnode(int value);
+    ~LinkedListnode();
     int data;
-    node* next;
+    LinkedListnode* next;
 };
 class LinkedList
 {
   public:
-    node* head;
+    LinkedListnode* head;
 
     LinkedList();
     ~LinkedList();

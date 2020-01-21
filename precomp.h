@@ -90,5 +90,6 @@ using namespace BattleSim;
 #include "Grid.h"
 #include "LinkedList.h"
 #include "game.h"
+#include "QuadTree.h"
 
 // clang-format on

@@ -11,7 +11,7 @@ LinkedList::~LinkedList()
 
 void LinkedList::InsertValue(int tankinput)
 {
-     auto *new_node = new node(tankinput);
+    auto* new_node = new LinkedListnode(tankinput);
      
     new_node->data = tankinput;
     new_node->next = nullptr;
@@ -31,16 +31,16 @@ void LinkedList::InsertValue(int tankinput)
  
 }
 
-node::node() :data(0), next(nullptr)
+LinkedListnode::LinkedListnode() : data(0), next(nullptr)
 {
 
 }
-node::node(int value) : data(value), next(nullptr)
+LinkedListnode::LinkedListnode(int value) : data(value), next(nullptr)
 {
 }
 
 
-node::~node()
+LinkedListnode::~LinkedListnode()
 { 
     delete next;
 }
