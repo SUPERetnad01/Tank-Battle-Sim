@@ -1,23 +1,24 @@
-#include "precomp.h"
 #include "QuadTree.h"
+#include "precomp.h"
 
-bool BattleSim::QuadTree::insertNode(QNode *node)
+bool BattleSim::QuadTree::insertNode(Tank* node)
 {
     if (&node == nullptr) return false;
-    if (!inBoundary(node->pos)) return false;
-    if (points.size() < this->capacity && NWTree == NULL) {
+    if (!inBoundary(node->position)) return false;
+    if (points.size() < this->capacity && NWTree == NULL)
+    {
         points.push_back(node);
         count++;
 
         this->points;
         return true;
-  
-   }
+    }
     this->points;
-    if (NWTree == NULL) {
+    if (NWTree == NULL)
+    {
         subdivide();
     }
-    if (NWTree->insertNode(node)) return true;    
+    if (NWTree->insertNode(node)) return true;
     if (NETree->insertNode(node)) return true;
     if (SWTree->insertNode(node)) return true;
     if (SETree->insertNode(node)) return true;
@@ -30,87 +31,88 @@ void BattleSim::QuadTree::subdivide()
     NWTree = new QuadTree(
         vec2(topLeftBorder.x, topLeftBorder.y),
         vec2((topLeftBorder.x + botRightBorder.x) / 2,
-                (topLeftBorder.y + botRightBorder.y) / 2),this);
+             (topLeftBorder.y + botRightBorder.y) / 2),
+        this);
 
     NETree = new QuadTree(
         vec2(topLeftBorder.x, (topLeftBorder.y + botRightBorder.y) / 2),
-        vec2((topLeftBorder.x + botRightBorder.x) / 2, botRightBorder.y),this);
+        vec2((topLeftBorder.x + botRightBorder.x) / 2, botRightBorder.y), this);
 
     SWTree = new QuadTree(
         vec2((topLeftBorder.x + botRightBorder.x) / 2, topLeftBorder.y),
-        vec2( botRightBorder.x, (topLeftBorder.y + botRightBorder.y) / 2),this);
+        vec2(botRightBorder.x, (topLeftBorder.y + botRightBorder.y) / 2), this);
 
     SETree = new QuadTree(
         vec2((topLeftBorder.x + botRightBorder.x) / 2, (topLeftBorder.y + botRightBorder.y) / 2),
-        vec2( botRightBorder.x, botRightBorder.y),this);
-    for (auto node : points) {
+        vec2(botRightBorder.x, botRightBorder.y), this);
+    for (auto node : points)
+    {
         this->NETree->insertNode(node);
         this->NWTree->insertNode(node);
-        this->SETree->insertNode(node); 
+        this->SETree->insertNode(node);
         this->SWTree->insertNode(node);
-        
     }
     points.clear();
-
 }
 
-tuple<QNode*,float> BattleSim::QuadTree::FindClosest(vec2 tankpos, QNode* closestnode = nullptr, float closestdistance = numeric_limits<float>::infinity())
+tuple<Tank*, float> BattleSim::QuadTree::FindClosest(Tank tank, Tank* closestnode = nullptr, float closestdistance = numeric_limits<float>::infinity())
 {
-    if(this->NETree->count > 0 && this->NETree->rectangle->intersectsCircle(tankpos, closestdistance)) {
-        if (this->NETree->points.size() == 0 && this->NETree->count==4) {
-           auto result = this->NETree->FindClosest(tankpos, closestnode, closestdistance);
+    if (this->NETree->count > 0 && this->NETree->rectangle->intersectsCircle(tank.position, closestdistance))
+    {
+        if (this->NETree->points.size() == 0 && this->NETree->count == 4)
+        {
+            auto result = this->NETree->FindClosest(tank, closestnode, closestdistance);
             closestnode = get<0>(result);
             closestdistance = get<1>(result);
         }
         else if (this->NETree->points.size() > 0)
         {
-            auto tupleNodeDistantce = this->NETree->closestDistanceinPoints(tankpos, closestdistance, closestnode);
+            auto tupleNodeDistantce = this->NETree->closestDistanceinPoints(tank, closestdistance, closestnode);
             closestnode = get<0>(tupleNodeDistantce);
             closestdistance = get<1>(tupleNodeDistantce);
-            
         }
-    }  
-    if (this->NWTree->count >0 && this->NWTree->rectangle->intersectsCircle(tankpos, closestdistance))
+    }
+    if (this->NWTree->count > 0 && this->NWTree->rectangle->intersectsCircle(tank.position, closestdistance))
     {
-        if (this->NWTree->points.size() == 0 && this->NWTree->count==4)
+        if (this->NWTree->points.size() == 0 && this->NWTree->count == 4)
         {
-            auto result = this->NWTree->FindClosest(tankpos, closestnode, closestdistance);
+            auto result = this->NWTree->FindClosest(tank, closestnode, closestdistance);
             closestnode = get<0>(result);
             closestdistance = get<1>(result);
         }
         else if (this->NWTree->points.size() > 0)
         {
-            auto tupleNodeDistantce = this->NWTree->closestDistanceinPoints(tankpos, closestdistance, closestnode);
+            auto tupleNodeDistantce = this->NWTree->closestDistanceinPoints(tank, closestdistance, closestnode);
             closestnode = get<0>(tupleNodeDistantce);
             closestdistance = get<1>(tupleNodeDistantce);
         }
-    }   
-    if (this->SETree->count >0 && this->SETree->rectangle->intersectsCircle(tankpos, closestdistance))
+    }
+    if (this->SETree->count > 0 && this->SETree->rectangle->intersectsCircle(tank.position, closestdistance))
     {
         if (this->SETree->points.size() == 0 && this->SETree->count == 4)
         {
-            auto result  = this->SETree->FindClosest(tankpos, closestnode, closestdistance);
+            auto result = this->SETree->FindClosest(tank, closestnode, closestdistance);
             closestnode = get<0>(result);
             closestdistance = get<1>(result);
         }
-        else if (this->SETree->points.size()>0)
+        else if (this->SETree->points.size() > 0)
         {
-            auto tupleNodeDistantce = this->SETree->closestDistanceinPoints(tankpos, closestdistance, closestnode);
+            auto tupleNodeDistantce = this->SETree->closestDistanceinPoints(tank, closestdistance, closestnode);
             closestnode = get<0>(tupleNodeDistantce);
             closestdistance = get<1>(tupleNodeDistantce);
         }
-    }   
-    if (this->SWTree->count >0 && this->SWTree->rectangle->intersectsCircle(tankpos, closestdistance))
+    }
+    if (this->SWTree->count > 0 && this->SWTree->rectangle->intersectsCircle(tank.position, closestdistance))
     {
         if (this->SWTree->points.size() == 0 && this->SWTree->count == 4)
         {
-            auto result = this->SWTree->FindClosest(tankpos, closestnode, closestdistance);
+            auto result = this->SWTree->FindClosest(tank, closestnode, closestdistance);
             closestnode = get<0>(result);
             closestdistance = get<1>(result);
         }
-        else if (this->SWTree->points.size()>0)
+        else if (this->SWTree->points.size() > 0)
         {
-            auto tupleNodeDistantce = this->SWTree->closestDistanceinPoints(tankpos, closestdistance, closestnode);
+            auto tupleNodeDistantce = this->SWTree->closestDistanceinPoints(tank, closestdistance, closestnode);
             closestnode = get<0>(tupleNodeDistantce);
             closestdistance = get<1>(tupleNodeDistantce);
         }
@@ -118,58 +120,119 @@ tuple<QNode*,float> BattleSim::QuadTree::FindClosest(vec2 tankpos, QNode* closes
     return make_tuple(closestnode, closestdistance);
 }
 
+vector<Tank*> BattleSim::QuadTree::FindNodesInRange(Tank tank, vector<Tank*> inrange, float range)
+{
+    if (this->NETree->count > 0 && this->NETree->rectangle->intersectsCircle(tank.position, range))
+    {
+        if (this->NETree->points.size() == 0 && this->NETree->count == 4)
+        {
+            inrange = this->NETree->FindNodesInRange(tank, inrange, range);
+        }
+        else if (this->NETree->points.size() > 0)
+        {
+            inrange = this->NETree->CollisionCheck(tank, range, inrange);
+        }
+    }
+    if (this->NWTree->count > 0 && this->NWTree->rectangle->intersectsCircle(tank.position, range))
+    {
+        if (this->NWTree->points.size() == 0 && this->NWTree->count == 4)
+        {
+            inrange = this->NWTree->FindNodesInRange(tank, inrange, range);
+        }
+        else if (this->NWTree->points.size() > 0)
+        {
+            inrange = this->NWTree->CollisionCheck(tank, range, inrange);
+        }
+    }
+    if (this->SETree->count > 0 && this->SETree->rectangle->intersectsCircle(tank.position, range))
+    {
+        if (this->SETree->points.size() == 0 && this->SETree->count == 4)
+        {
+            inrange = this->SETree->FindNodesInRange(tank, inrange, range);
+        }
+        else if (this->SETree->points.size() > 0)
+        {
+            inrange = this->SETree->CollisionCheck(tank, range, inrange);
+        }
+    }
+    if (this->SWTree->count > 0 && this->SWTree->rectangle->intersectsCircle(tank.position, range))
+    {
+        if (this->SWTree->points.size() == 0 && this->SWTree->count == 4)
+        {
+            inrange = this->SWTree->FindNodesInRange(tank, inrange, range);
+        }
+        else if (this->SWTree->points.size() > 0)
+        {
+            inrange = this->SWTree->CollisionCheck(tank, range, inrange);
+        }
+    }
+    return inrange;
+}
+
 bool BattleSim::QuadTree::inBoundary(vec2 point)
 {
-   return(point.x <= topLeftBorder.x &&
-        point.x >= botRightBorder.x &&
-        point.y <= topLeftBorder.y &&
-        point.y >= botRightBorder.y);
+    return (point.x <= topLeftBorder.x &&
+            point.x >= botRightBorder.x &&
+            point.y <= topLeftBorder.y &&
+            point.y >= botRightBorder.y);
 }
 
-void BattleSim::QuadTree::updateTank(Tank *tank)
+bool BattleSim::QuadTree::removeNode(Tank* node)
 {
-    QNode *deletednode = new QNode(tank->Get_Position(),tank);
-    this->insertNode(this->removeNode(deletednode));
-}
-
-QNode* BattleSim::QuadTree::removeNode(QNode* node)
-{
-    if(&node == nullptr) return node;
-    if (!inBoundary(node->pos)) return node;
+    if (&node == nullptr) return false;
+    if (!inBoundary(node->position)) return false;
     if (points.size() > 0)
     {
         for (int i = 0; i < points.size(); i++)
         {
-            if (points[i] == node) {
-                QNode* _node = points[i];
+            if (points[i] = node)
+            {
                 points.erase(points.begin() + i);
-                return _node;
+                count--;
+                return true;
             }
         }
     }
     if (NWTree == NULL)
     {
-        return node;
+        return false;
     }
-    if (NWTree->removeNode(node)) return node;
-    if (NETree->removeNode(node)) return node;
-    if (SWTree->removeNode(node)) return node;
-    if (SETree->removeNode(node)) return node;
+    if (NWTree->removeNode(node)) return true;
+    if (NETree->removeNode(node)) return true;
+    if (SWTree->removeNode(node)) return true;
+    if (SETree->removeNode(node)) return true;
 
-    return node;
+    return false;
 }
 
-tuple<QNode*, float> BattleSim::QuadTree::closestDistanceinPoints(vec2 tankpos, float closestdistance, QNode* closestNode)
+vector<Tank*> BattleSim::QuadTree::CollisionCheck(Tank tank, float range, vector<Tank*> nodesinrage)
+{
+
+    for (int i = 0; i < points.size(); i++)
+    {
+        float distance = (tank.position - points[i]->position).length();
+        if (distance < range && tank.position.x != points[i]->position.x && tank.position.y != points[i]->position.y)
+        {
+
+            nodesinrage.push_back(points[i]);
+        }
+    }
+    return nodesinrage;
+}
+
+tuple<Tank*, float> BattleSim::QuadTree::closestDistanceinPoints(Tank tank, float closestdistance, Tank* closestNode)
 {
     for (int i = 0; i < points.size(); i++)
     {
-        float distance = (tankpos - points[i]->pos).length(); //sqrt((tankpos.x - points[i]->pos.x) + sqrtf(tankpos.y - points[i]->pos.y));
-        if (distance < closestdistance)
+        if (points[i]->allignment != tank.allignment)
         {
-            closestNode = points[i];
-            closestdistance = distance;
+            float distance = (tank.position - points[i]->position).length();
+            if (distance < closestdistance)
+            {
+                closestNode = points[i];
+                closestdistance = distance;
+            }
         }
     }
-    return make_tuple(closestNode,closestdistance);
+    return make_tuple(closestNode, closestdistance);
 }
-

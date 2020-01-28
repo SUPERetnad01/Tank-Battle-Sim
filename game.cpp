@@ -52,6 +52,7 @@ vec2 nullpoint = {0, -2000};
 vec2 Maxborder = {SCRWIDTH, SCRHEIGHT};
 QuadTree *redTanksQTree = new QuadTree(Maxborder, nullpoint);;
 QuadTree *blueTanksQTree = new QuadTree(Maxborder, nullpoint);
+QuadTree *allTanksQTree = new QuadTree(Maxborder, nullpoint);
 
 const static float tank_radius = 12.f;
 const static float rocket_radius = 10.f;
@@ -93,17 +94,14 @@ void Game::Init()
     for (Tank& tank : tanks)
     {
         QNode* x = new QNode(tank.position, &tank);
+        allTanksQTree->insertNode(&tank);
         if (tank.allignment == RED)
         {
             redTanks.emplace_back(&tank);
-            redTanksQTree->insertNode(x);
         }
         else
         {
-
             blueTanks.emplace_back(&tank);
-            blueTanksQTree->insertNode(x);
-
         }
     }
     particle_beams.push_back(Particle_beam(vec2(SCRWIDTH / 2, SCRHEIGHT / 2), vec2(100, 50), &particle_beam_sprite, PARTICLE_BEAM_HIT_VALUE));
@@ -127,20 +125,11 @@ Game::~Game()
 // Iterates through all tanks and returns the closest enemy tank for the given tank
 // -----------------------------------------------------------
 Tank& Game::FindClosestEnemy(Tank& current_tank)
-    {
-        if (current_tank.allignment == RED)
-        {
-            auto result = blueTanksQTree->FindClosest(current_tank.position, nullptr, numeric_limits<float>::infinity());
-            auto closesttank = get<0>(result);
-            return *closesttank->tank;
-        }
-        else
-        {
-            auto result = redTanksQTree->FindClosest(current_tank.position, nullptr, numeric_limits<float>::infinity());
-            auto closesttank = get<0>(result);
-            return *closesttank->tank;
-        }
-    }   
+{
+    auto result = allTanksQTree->FindClosest(current_tank, nullptr, numeric_limits<float>::infinity());
+    auto closesttank = get<0>(result);
+    return *closesttank;
+}   
 
 // -----------------------------------------------------------
 // Update the game state:
@@ -283,43 +272,26 @@ void BattleSim::Game::MeasurePerformance()
 
 void BattleSim::Game::UpdateTanks()
 {
-    /*tbb::parallel_for(tbb::blocked_range<int>(0, tanks.size()),
-                      [&](tbb::blocked_range<int> r)
-    {
-                          for (auto i = r.begin(); i < r.end(); i++)
-                          {
-                              Tank& tank = tanks[i];
-                              if (tank.active)
-                              {
-                                  tank.Tick();
-                                  if (tank.Rocket_Reloaded())
-                                  {
-                                      Tank& target = FindClosestEnemy(tank);
-
-                                      scoped_lock lock(mtx);
-                                      rockets.push_back(
-                                          Rocket(&grid, tank.position, (target.Get_Position() - tank.position).normalized() * 3, rocket_radius,
-                                                 tank.allignment, ((tank.allignment == RED) ? &rocket_red : &rocket_blue)));
-                                      tank.Reload_Rocket();
-                                  }
-                              }
-                          }
-    });*/
-
     for (Tank& tank : tanks)
     {
         if (tank.active)
         {
-            tank.Tick();
-            if (tank.Rocket_Reloaded())
+          //QuadTreebasedColision
+          /*  vector<Tank*> allNodesInRange;
+            allNodesInRange = allTanksQTree->FindNodesInRange(tank, allNodesInRange, tank.collision_radius);
+            if (allNodesInRange.size() > 0)
             {
-                if (tank.allignment == RED) {
-                    redTanksQTree->updateTank(&tank);
-                }
-                else
+                for (Tank* node : allNodesInRange)
                 {
-                    blueTanksQTree->updateTank(&tank);
+                    vec2 dir = tank.Get_Position() - node->Get_Position();
+                    tank.Push(dir.normalized(), 1.0f);
                 }
+            } */
+            tank.grid->handleTankCell(tank.CellX, tank.CellY,&tank);
+            allTanksQTree->removeNode(&tank); 
+            tank.Tick();
+            allTanksQTree->insertNode(&tank);
+            if (tank.Rocket_Reloaded()){
                 Tank& target = FindClosestEnemy(tank);
                 rockets.push_back(
                     Rocket(&grid, tank.position, (target.Get_Position() - tank.position).normalized() * 3, rocket_radius,

@@ -22,7 +22,7 @@ void LinkedList::InsertValue(int tankinput)
         return;
     }
     auto current = head;
-    while (current->next != nullptr && current->data >= current->next->data)
+    while (current->next != nullptr && new_node->data >= current->next->data)
     {
         current = current->next;
     }
