@@ -1,16 +1,15 @@
-#include "precomp.h"
 #include "Grid.h"
+#include "precomp.h"
 #include <cmath>
-
 
 BattleSim::Grid::Grid()
 {
-     //clear the grid
-    for (int x = 0; x < numberOfCells; x++)
+    //clear the grid
+    for (int y = 0; y < numberOfCells; y++)
     {
-        for (int y = 0; y < numberOfCells; ++y)
+        for (int x = 0; x < numberOfCells; ++x)
         {
-            tankcells[x][y] = nullptr;
+            tankcells[x][y].empty();
         }
     }
 }
@@ -21,60 +20,47 @@ BattleSim::Grid::~Grid()
 
 void BattleSim::Grid::addTank2Cell(Tank* tank)
 {
-    int cellX = (int)((tank->position.x / Grid::sizeOfCell)+gridOffset);
-    int cellY = (int)((tank->position.y / Grid::sizeOfCell)+gridOffset);
-    tank->prev_ = nullptr;
-    tank->next_ = tankcells[cellX][cellY];
-    tankcells[cellX][cellY] = tank;
-    if (tank->next_ != nullptr)
-    {
-        tank->next_->prev_ = tank;
-    }
+    int cellX = (int)((tank->position.x / Grid::sizeOfCell) + gridOffset);
+    int cellY = (int)((tank->position.y / Grid::sizeOfCell) + gridOffset);
+    tankcells[cellX][cellY].push_back(tank);
+
 }
 
 void BattleSim::Grid::moveTank2NewCell(Tank* tank, vec2 oldposition)
-    {  
+{
     // See which cell it was in.
     int oldCellX = (int)((oldposition.x / Grid::sizeOfCell) + gridOffset);
     int oldCellY = (int)((oldposition.y / Grid::sizeOfCell) + gridOffset);
 
     int cellX = (int)((tank->position.x / Grid::sizeOfCell) + gridOffset);
     int cellY = (int)((tank->position.y / Grid::sizeOfCell) + gridOffset);
-    
+
     // If it didn't change cells, we're done.
     if (oldCellX == cellX && oldCellY == cellY) return;
-    // Unlink it from the list of its old cell.
-    if (tank->prev_ != nullptr)
+    vector<Tank*> &temp = tankcells[oldCellX][oldCellY];
+   /* if (temp.size() > largestsize) {
+        largestsize = temp.size();
+        cout << largestsize << endl;
+    }*/
+    for (int i = 0; i < temp.size(); i++)
     {
-        tank->prev_->next_ = tank->next_;
-    }
-    if (tank->next_ != nullptr)
-    {
-        tank->next_->prev_ = tank->prev_;
-    }
-
-    if (tank->next_ != nullptr)
-    {
-        tank->next_->prev_ = tank->prev_;
-    }
-
-    // If it's the head of a list, remove it.
-    if (tankcells[oldCellX][oldCellY] == tank)
-    {
-        tankcells[oldCellX][oldCellY] = tank->next_;
+        if (temp[i] == tank ) // || temp[i]->active == false check ignor dead tanks 
+        {
+            temp.erase(temp.begin() + i);
+        }
     }
     tank->CellX = cellX;
     tank->CellY = cellY;
     // Add it back to the grid at its new cell.
     addTank2Cell(tank);
-    }
+}
 
 void BattleSim::Grid::handleTankCell(int x ,int y ,Tank* tank)
-{                                        //     1 | 2 | 3
-    Tank* currentTankCell = tankcells[x][y];        //     4 | 5 | 6
-    if(tank != nullptr)                  //     7 | 8 | 9
+{                                                           //     1 | 2 | 3
+    vector<Tank*> currentTankCell = tankcells[x][y];        //     4 | 5 | 6
+    if(tank != nullptr)                                     //     7 | 8 | 9
     {
-        if (tank->next_ != nullptr) {
+        if (currentTankCell.size() != 0) {
             handleTank(tank, currentTankCell);
         }
         if (x < numberOfCells - 1)
@@ -85,7 +71,7 @@ void BattleSim::Grid::handleTankCell(int x ,int y ,Tank* tank)
         {
             handleTank(tank, tankcells[x - 1][y]);
         }
-                                                                
+
         if (x > 0 && y > 0)
         {
             handleTank(tank, tankcells[x - 1][y - 1]);
@@ -113,16 +99,14 @@ void BattleSim::Grid::handleTankCell(int x ,int y ,Tank* tank)
     }
 }
 
-void BattleSim::Grid::handleTank(Tank* tank, Tank* other)
+void BattleSim::Grid::handleTank(Tank* tank, vector<Tank*> othertanks)
 { 
-    while (other != nullptr)
-    {
-        if (tank != other)
+    for (auto othertank : othertanks){
+        if (tank != othertank && othertank != nullptr)
         {
-            collision(tank, other);
+            collision(tank, othertank);
             
         }
-        other = other->next_;
     }    
 }
 
@@ -138,20 +122,12 @@ void BattleSim::Grid::collision(Tank* tank, Tank* other)
     }
 }
 
-void BattleSim::Grid::addRocket2Cell(Rocket* rocket)
-{
-    int cellX = (int)((rocket->position.x / Grid::sizeOfCell) + gridOffset);
-    int cellY = (int)((rocket->position.y / Grid::sizeOfCell) + gridOffset);
-    
-    rocketcells[cellX][cellY] = rocket;
-}
-
 void BattleSim::Grid::moveRocket2NewCell(Rocket* rocket, vec2 oldposition)
-    {
+{
 
-        // See which cell it was in.
-        int oldCellX = (int)((oldposition.x / Grid::sizeOfCell) + gridOffset);
-        int oldCellY = (int)((oldposition.y / Grid::sizeOfCell) + gridOffset);
+    // See which cell it was in.
+    int oldCellX = (int)((oldposition.x / Grid::sizeOfCell) + gridOffset);
+    int oldCellY = (int)((oldposition.y / Grid::sizeOfCell) + gridOffset);
 
         int cellX = (int)((rocket->position.x / Grid::sizeOfCell) + gridOffset);
         int cellY = (int)((rocket->position.y / Grid::sizeOfCell) + gridOffset);
@@ -167,24 +143,26 @@ void BattleSim::Grid::moveRocket2NewCell(Rocket* rocket, vec2 oldposition)
         // Add it back to the grid at its new cell.
         handelRocketCell(cellX, cellY, rocket);
     }
+    // handelCell(cellX,cellY);
+    // If it didn't change cells, we're done.
+    
 
 void BattleSim::Grid::handelRocketCell(int x, int y,Rocket* rocket)
 {
-    Tank* tank = tankcells[x][y];
-    while (tank != NULL)
-    { 
-        if (tank->active) {
+    vector<Tank*> tanks = tankcells[x][y];
+    for (auto tank : tanks) {
+        if (tank->active)
+        {
             handelRocket(rocket, tank);
         }
-        tank = tank->next_;
     }
 }
 
-void BattleSim::Grid::handelRocket(Rocket* rocket,Tank* tank)
+void BattleSim::Grid::handelRocket(Rocket* rocket, Tank* tank)
+{
+    if (rocket->Intersects(tank->position, tank->collision_radius) && tank->active && (tank->allignment != rocket->allignment))
     {
-        if (rocket->Intersects(tank->position, tank->collision_radius) && tank->active && (tank->allignment != rocket->allignment))
-        {
-            rocket->setHitTank(tank);
-            rocket->hitTarget = true;
-        }
+        rocket->setHitTank(tank);
+        rocket->hitTarget = true;
     }
+}

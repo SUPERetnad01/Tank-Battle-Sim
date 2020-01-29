@@ -46,4 +46,7 @@
       <Filter>template code</Filter>
     </Text>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="kernel.cl" />
+  </ItemGroup>
 </Project>

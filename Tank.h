@@ -37,7 +37,7 @@ class Tank
     vec2 position;
     vec2 speed;
     vec2 target;
-
+    int vectorindex;
     int health;
 
     float collision_radius;
@@ -58,13 +58,6 @@ class Tank
     Sprite* tank_sprite;
     Sprite* smoke_sprite;
     Grid* grid;
-  private:
-    Tank* next_;
-    Tank* prev_;
-    
-    
-
-
 };
 
 } // namespace BattleSim

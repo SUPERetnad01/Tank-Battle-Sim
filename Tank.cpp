@@ -19,8 +19,6 @@ Tank::Tank(Grid* grid_,
            float max_speed)
     : CellX(NULL),
       CellY(NULL),
-    next_(NULL),
-      prev_(NULL),
       grid(grid_),
       position(pos_x, pos_y),
       allignment(allignment),
