@@ -170,11 +170,9 @@ void Game::Init()
 
     ///////
     frame_count_font = new Font("assets/digital_small.png", "ABCDEFGHIJKLMNOPQRSTUVWXYZ:?!=-0123456789.");
-    for (int i = 0; i < gridarrys; i++)
-    {
-        Xgrid[i] = 69420.0f;
-        Ygrid[i] = 69420.0f;
-    }
+    
+    memset(Xgrid,69420.0f,sizeof(Xgrid));
+    memset(Ygrid,69420.0f,sizeof(Xgrid));
     tanks.reserve(NUM_TANKS_BLUE + NUM_TANKS_RED);
     blueTanks.reserve(NUM_TANKS_BLUE);
     redTanks.reserve(NUM_TANKS_RED);
