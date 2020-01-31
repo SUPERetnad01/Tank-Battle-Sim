@@ -1,5 +1,5 @@
-#include "Grid.h"
 #include "precomp.h"
+#include "Grid.h"
 #include <cmath>
 
 BattleSim::Grid::Grid()

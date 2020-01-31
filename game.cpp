@@ -1,10 +1,11 @@
 #include "precomp.h" // include (only) this in every .cpp file
+#include <CL/cl.h>
 
 #define NUM_TANKS_BLUE 1279
 #define NUM_TANKS_RED 1279
 #define NUM_TANKS_TOTAL 2558
 #define TANK_MAX_HEALTH 1000
-#define ROCKET_HIT_VALUE 60 
+#define ROCKET_HIT_VALUE 60
 #define PARTICLE_BEAM_HIT_VALUE 50
 
 #define TANK_MAX_SPEED 1.5
@@ -15,9 +16,6 @@
 #define HEALTH_BAR_SPACING 0
 
 #define MAX_FRAMES 2000
-
-
-#include <CL/cl.h>
 #define MAX_SOURCE_SIZE (0x100000)
 
 //Global performance timer
@@ -58,9 +56,10 @@ vector<int> red_health_bars = {};
 vector<int> blue_health_bars = {};
 vec2 nullpoint = {0, -2000};
 vec2 Maxborder = {SCRWIDTH, SCRHEIGHT};
-QuadTree *redTanksQTree = new QuadTree(Maxborder, nullpoint);;
-QuadTree *blueTanksQTree = new QuadTree(Maxborder, nullpoint);
-QuadTree *allTanksQTree = new QuadTree(Maxborder, nullpoint);
+QuadTree* redTanksQTree = new QuadTree(Maxborder, nullpoint);
+;
+QuadTree* blueTanksQTree = new QuadTree(Maxborder, nullpoint);
+QuadTree* allTanksQTree = new QuadTree(Maxborder, nullpoint);
 
 const static float tank_radius = 12.f;
 const static float rocket_radius = 10.f;
@@ -155,10 +154,10 @@ void Game::Init()
 
     // Display the result to the screen
     for (i = 0; i < LIST_SIZE; i++)
-       // printf("%d + %d = %d\n", A[i], B[i], C[i]);
+        // printf("%d + %d = %d\n", A[i], B[i], C[i]);
 
-    // Clean up
-    ret = clFlush(command_queue);
+        // Clean up
+        ret = clFlush(command_queue);
     ret = clFinish(command_queue);
     ret = clReleaseKernel(kernel);
     ret = clReleaseProgram(program);
@@ -171,12 +170,11 @@ void Game::Init()
     free(B);
     free(C);
 
-
     ///////
     frame_count_font = new Font("assets/digital_small.png", "ABCDEFGHIJKLMNOPQRSTUVWXYZ:?!=-0123456789.");
-    
-    memset(Xgrid,69420.0f,sizeof(Xgrid));
-    memset(Ygrid,69420.0f,sizeof(Xgrid));
+
+    memset(Xgrid, 69420.0f, sizeof(Xgrid));
+    memset(Ygrid, 69420.0f, sizeof(Xgrid));
     tanks.reserve(NUM_TANKS_BLUE + NUM_TANKS_RED);
     blueTanks.reserve(NUM_TANKS_BLUE);
     redTanks.reserve(NUM_TANKS_RED);
@@ -241,7 +239,7 @@ Tank& Game::FindClosestEnemy(Tank& current_tank)
     auto result = allTanksQTree->FindClosest(current_tank, nullptr, numeric_limits<float>::infinity());
     auto closesttank = get<0>(result);
     return *closesttank;
-}   
+}
 
 // -----------------------------------------------------------
 // Update the game state:
@@ -256,10 +254,13 @@ void Game::Update(float deltaTime)
     UpdateTanks();
 
     //Update smoke plumes
-    for (Smoke& _smoke : smokes)
-    {
-        _smoke.Tick();
-    }
+    //for (Smoke& _smoke : smokes)
+    tbb::parallel_for(tbb::blocked_range<int>(0, smokes.size()), [&](tbb::blocked_range<int> r) {
+        for (auto i = r.begin(); i < r.end(); i++)
+        {
+            smokes[i].Tick();
+        }
+    });
 
     //Update rockets
     UpdateRockets();
@@ -271,10 +272,13 @@ void Game::Update(float deltaTime)
     UpdateParticalBeams();
 
     //Update explosion sprites and remove when done with remove erase idiom
-    for (Explosion& _explosion : explosions)
-    {
-        _explosion.Tick();
-    }
+    //for (Explosion& _explosion : explosions)
+    tbb::parallel_for(tbb::blocked_range<int>(0, explosions.size()), [&](tbb::blocked_range<int> r) {
+        for (auto i = r.begin(); i < r.end(); i++)
+        {
+            explosions[i].Tick();
+        }
+    });
 
     explosions.erase(std::remove_if(explosions.begin(), explosions.end(), [](const Explosion& _explosion) { return _explosion.done(); }), explosions.end());
     SortHealthBars();
@@ -292,59 +296,54 @@ void Game::Draw()
 
     //*Draw Tanks*
     //for (int i = 0; i < NUM_TANKS_BLUE + NUM_TANKS_RED; i++)
-    tbb::parallel_for(tbb::blocked_range<int>(0, NUM_TANKS_BLUE + NUM_TANKS_RED),
-                      [&](tbb::blocked_range<int> r) {
-                          for (int i = r.begin(); i < r.end(); ++i)
-                          {
-                              tanks.at(i).Draw(screen);
+    tbb::parallel_for(tbb::blocked_range<int>(0, NUM_TANKS_BLUE + NUM_TANKS_RED), [&](tbb::blocked_range<int> r) {
+        for (int i = r.begin(); i < r.end(); ++i)
+        {
+            tanks.at(i).Draw(screen);
 
-                              vec2 tPos = tanks.at(i).Get_Position();
-                              // tread marks
-                              if ((tPos.x >= 0) && (tPos.x < SCRWIDTH) && (tPos.y >= 0) && (tPos.y < SCRHEIGHT))
-                                  background.GetBuffer()[(int)tPos.x + (int)tPos.y * SCRWIDTH] = SubBlend(
-                                      background.GetBuffer()[(int)tPos.x + (int)tPos.y * SCRWIDTH], 0x808080);
-                          }
-                      });
+            vec2 tPos = tanks.at(i).Get_Position();
+            // tread marks
+            if ((tPos.x >= 0) && (tPos.x < SCRWIDTH) && (tPos.y >= 0) && (tPos.y < SCRHEIGHT))
+                background.GetBuffer()[(int)tPos.x + (int)tPos.y * SCRWIDTH] = SubBlend(
+                    background.GetBuffer()[(int)tPos.x + (int)tPos.y * SCRWIDTH], 0x808080);
+        }
+    });
 
     //*Draw Rockets*
     //for (Rocket& rocket : rockets)
-    tbb::parallel_for(tbb::blocked_range<int>(0, rockets.size()),
-                      [&](tbb::blocked_range<int> r) {
-                          for (int i = r.begin(); i < r.end(); ++i)
-                          {
-                              rockets[i].Draw(screen);
-                          }
-                      });
+    tbb::parallel_for(tbb::blocked_range<int>(0, rockets.size()), [&](tbb::blocked_range<int> r) {
+        for (int i = r.begin(); i < r.end(); ++i)
+        {
+            rockets[i].Draw(screen);
+        }
+    });
 
     //*Draw Smoke*
     //for (Smoke& _smoke : smokes)
-    tbb::parallel_for(tbb::blocked_range<int>(0, smokes.size()),
-                      [&](tbb::blocked_range<int> r) {
-                          for (int i = r.begin(); i < r.end(); ++i)
-                          {
-                              smokes[i].Draw(screen);
-                          }
-                      });
+    tbb::parallel_for(tbb::blocked_range<int>(0, smokes.size()), [&](tbb::blocked_range<int> r) {
+        for (int i = r.begin(); i < r.end(); ++i)
+        {
+            smokes[i].Draw(screen);
+        }
+    });
 
     //*Draw Particle_beam*
     //for (Particle_beam& particle_beam : particle_beams)
-    tbb::parallel_for(tbb::blocked_range<int>(0, particle_beams.size()),
-                      [&](tbb::blocked_range<int> r) {
-                          for (int i = r.begin(); i < r.end(); ++i)
-                          {
-                              particle_beams[i].Draw(screen);
-                          }
-                      });
+    tbb::parallel_for(tbb::blocked_range<int>(0, particle_beams.size()), [&](tbb::blocked_range<int> r) {
+        for (int i = r.begin(); i < r.end(); ++i)
+        {
+            particle_beams[i].Draw(screen);
+        }
+    });
 
     //*Draw Explosion*
     //for (Explosion& _explosion : explosions)
-    tbb::parallel_for(tbb::blocked_range<int>(0, explosions.size()),
-                      [&](tbb::blocked_range<int> r) {
-                          for (int i = r.begin(); i < r.end(); ++i)
-                          {
-                              explosions[i].Draw(screen);
-                          }
-                      });
+    tbb::parallel_for(tbb::blocked_range<int>(0, explosions.size()), [&](tbb::blocked_range<int> r) {
+        for (int i = r.begin(); i < r.end(); ++i)
+        {
+            explosions[i].Draw(screen);
+        }
+    });
 
     //Draw sorted health bars
     DrawBlueHealth();
@@ -388,9 +387,9 @@ void BattleSim::Game::UpdateTanks()
     {
         if (tank.active)
         {
-          //QuadTreebasedColision
+            //QuadTreebasedColision
             GPGPU(&tank);
-          /*  vector<Tank*> allNodesInRange;
+            /*  vector<Tank*> allNodesInRange;
             allNodesInRange = allTanksQTree->FindNodesInRange(tank, allNodesInRange, tank.collision_radius);
             if (allNodesInRange.size() > 0)
             {
@@ -400,11 +399,12 @@ void BattleSim::Game::UpdateTanks()
                     tank.Push(dir.normalized(), 1.0f);
                 }
             } */
-            tank.grid->handleTankCell(tank.CellX, tank.CellY,&tank);
-            allTanksQTree->removeNode(&tank); 
+            tank.grid->handleTankCell(tank.CellX, tank.CellY, &tank);
+            allTanksQTree->removeNode(&tank);
             tank.Tick();
             allTanksQTree->insertNode(&tank);
-            if (tank.Rocket_Reloaded()){
+            if (tank.Rocket_Reloaded())
+            {
                 Tank& target = FindClosestEnemy(tank);
                 rockets.push_back(
                     Rocket(&grid, tank.position, (target.Get_Position() - tank.position).normalized() * 3, rocket_radius,
@@ -438,29 +438,27 @@ void BattleSim::Game::UpdateRockets()
 
 void BattleSim::Game::UpdateParticalBeams()
 {
-    tbb::parallel_for(tbb::blocked_range<int>(0, particle_beams.size()),
-                      [&](tbb::blocked_range<int> r) {
-                          for (int i = r.begin(); i < r.end(); ++i)
-                          {
+    tbb::parallel_for(tbb::blocked_range<int>(0, particle_beams.size()), [&](tbb::blocked_range<int> r) {
+        for (int i = r.begin(); i < r.end(); ++i)
+        {
+            Particle_beam& particle_beam = particle_beams[i];
+            particle_beam.tick(tanks);
 
-                              Particle_beam& particle_beam = particle_beams[i];
-                              particle_beam.tick(tanks);
-
-                              //Damage all tanks within the damage window of the beam (the window is an axis-aligned bounding box)
-                              for (Tank& tank : tanks)
-                              {
-                                  if (tank.active &&
-                                      particle_beam.rectangle.intersectsCircle(tank.Get_Position(),
-                                                                               tank.Get_collision_radius()))
-                                  {
-                                      if (tank.hit(particle_beam.damage))
-                                      {
-                                          smokes.push_back(Smoke(smoke, tank.position - vec2(0, 48)));
-                                      }
-                                  }
-                              }
-                          }
-                      });
+            //Damage all tanks within the damage window of the beam (the window is an axis-aligned bounding box)
+            for (Tank& tank : tanks)
+            {
+                if (tank.active &&
+                    particle_beam.rectangle.intersectsCircle(tank.Get_Position(),
+                                                             tank.Get_collision_radius()))
+                {
+                    if (tank.hit(particle_beam.damage))
+                    {
+                        smokes.push_back(Smoke(smoke, tank.position - vec2(0, 48)));
+                    }
+                }
+            }
+        }
+    });
 }
 
 /*
@@ -558,18 +556,15 @@ void BattleSim::Game::DrawHealthBars(int i, char color, int health)
                 health_bar_end_x, health_bar_end_y, GREENMASK);
 }
 
-
 void BattleSim::Game::GPGPU(Tank* tank)
 {
     int cellpos = tank->CellY * maximumUnitsInCell * tank->CellX - maximumUnitsInCell;
     maximumUnitsInCell;
     for (int i = 0; i < maximumUnitsInCell; i++)
-    {   
+    {
         Xgrid[cellpos] = tank->position.x;
         Ygrid[cellpos] = tank->position.y;
     }
-    
-    
 }
 
 // -----------------------------------------------------------
