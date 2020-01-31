@@ -3,6 +3,29 @@ Periode 2 Battle Sim Project
 
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/58c2d9ea774341fb812b4c3189f63555)](https://www.codacy.com/manual/kevin.celinski/PP2-BattleSim-MI?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=Altair115/PP2-BattleSim-MI&amp;utm_campaign=Badge_Grade)
 
+How To Run:
+------------------
+Install vckpg from:
+https://github.com/microsoft/vcpkg
+make a directory somewhere for storage of vcpkg and open a cmd window there.
+
+Execute the following:
+```
+> git clone https://github.com/Microsoft/vcpkg.git
+> cd vcpkg
+> .\bootstrap-vcpkg.bat
+```
+Then, to hook up user-wide integration, run (note: requires admin on first use)
+```
+> .\vcpkg integrate install
+```
+And now for the packages
+```
+vcpkg install tbb opencl  --triplet x64-windows
+```
+and you're good to go on running this
+
+
 Requirements:
 Algoritmiek (1+):
 -------------------
