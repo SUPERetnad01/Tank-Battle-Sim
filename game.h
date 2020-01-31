@@ -28,14 +28,14 @@ class Game
     void MeasurePerformance();
     void UpdateTanks();
     void UpdateRockets();
-    void UpdateParticalBeams();
-    std::vector<LinkedList> BucketSort(std::vector<Tank*>& unsortedTanks, int numberofbuckets);
-    std::vector<int> CountSort(const vector<Tank*>& in);
-    void SortHealthBars();
-    void DrawBlueHealth();
-    void DrawRedHealth();
+    void update_partical_beams();
+    std::vector<LinkedList> bucket_sort(std::vector<Tank*>& unsortedTanks, int numberofbuckets);
+    std::vector<int> counting_sort(const vector<Tank*>& in);
+    void sort_health_bars();
+    void draw_blue_health();
+    void draw_red_health();
+    void draw_health_bars(int i, char color, int health);
     void GPGPU(Tank*);
-    void DrawHealthBars(int i, char color, int health);
     Tank& FindClosestEnemy(Tank& current_tank);
 
     void MouseUp(int button)

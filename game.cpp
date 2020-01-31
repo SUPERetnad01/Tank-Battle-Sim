@@ -269,7 +269,7 @@ void Game::Update(float deltaTime)
     rockets.erase(std::remove_if(rockets.begin(), rockets.end(), [](const Rocket& rocket) { return !rocket.active; }), rockets.end());
 
     //Update particle beams
-    UpdateParticalBeams();
+    update_partical_beams();
 
     //Update explosion sprites and remove when done with remove erase idiom
     //for (Explosion& _explosion : explosions)
@@ -281,7 +281,7 @@ void Game::Update(float deltaTime)
     });
 
     explosions.erase(std::remove_if(explosions.begin(), explosions.end(), [](const Explosion& _explosion) { return _explosion.done(); }), explosions.end());
-    SortHealthBars();
+    sort_health_bars();
 }
 
 void Game::Draw()
@@ -346,8 +346,8 @@ void Game::Draw()
     });
 
     //Draw sorted health bars
-    DrawBlueHealth();
-    DrawRedHealth();
+    draw_blue_health();
+    draw_red_health();
 }
 
 // -----------------------------------------------------------
@@ -436,7 +436,7 @@ void BattleSim::Game::UpdateRockets()
     }
 }
 
-void BattleSim::Game::UpdateParticalBeams()
+void BattleSim::Game::update_partical_beams()
 {
     tbb::parallel_for(tbb::blocked_range<int>(0, particle_beams.size()), [&](tbb::blocked_range<int> r) {
         for (int i = r.begin(); i < r.end(); ++i)
@@ -461,8 +461,8 @@ void BattleSim::Game::UpdateParticalBeams()
     });
 }
 
-/*
-vector<LinkedList> BattleSim::Game::BucketSort(vector<Tank*>& unsortedtanks, int numberofbuckets)
+/* Bucket sort
+vector<LinkedList> BattleSim::Game::bucket_sort(vector<Tank*>& unsortedtanks, int numberofbuckets)
 {
     vector<LinkedList> buckets(numberofbuckets);
     for (auto& tank : unsortedtanks)
@@ -473,7 +473,7 @@ vector<LinkedList> BattleSim::Game::BucketSort(vector<Tank*>& unsortedtanks, int
 }
 */
 
-std::vector<int> BattleSim::Game::CountSort(const vector<Tank*>& in)
+std::vector<int> BattleSim::Game::counting_sort(const vector<Tank*>& in)
 {
     std::vector<int> Counters(TANK_MAX_HEALTH + 1, 0);
     std::vector<int> Results;
@@ -489,21 +489,21 @@ std::vector<int> BattleSim::Game::CountSort(const vector<Tank*>& in)
     return Results;
 }
 
-void BattleSim::Game::SortHealthBars()
+void BattleSim::Game::sort_health_bars()
 {
-    //redHealthBars = BucketSort(redTanks, 100);
-    //blueHealthBars = BucketSort(blueTanks, 100);
+    //redHealthBars = bucket_sort(redTanks, 100);
+    //blueHealthBars = bucket_sort(blueTanks, 100);
 
-    red_health_bars = CountSort(redTanks);
-    blue_health_bars = CountSort(blueTanks);
+    red_health_bars = counting_sort(redTanks);
+    blue_health_bars = counting_sort(blueTanks);
 }
 
-void BattleSim::Game::DrawBlueHealth()
+void BattleSim::Game::draw_blue_health()
 {
     int count_blue = 0;
     for (int currentBlueTank : blue_health_bars)
     {
-        DrawHealthBars(count_blue, 'b', currentBlueTank);
+        draw_health_bars(count_blue, 'b', currentBlueTank);
         count_blue++;
     }
 
@@ -514,7 +514,7 @@ void BattleSim::Game::DrawBlueHealth()
         LinkedListnode* currentBlueTank = bucket.head;
         while (currentBlueTank != nullptr)
         {
-            DrawHealthBars(count_blue, 'b', currentBlueTank->data);
+            draw_health_bars(count_blue, 'b', currentBlueTank->data);
             currentBlueTank = currentBlueTank->next;
             count_blue++;
         }
@@ -522,12 +522,12 @@ void BattleSim::Game::DrawBlueHealth()
     */
 }
 
-void BattleSim::Game::DrawRedHealth()
+void BattleSim::Game::draw_red_health()
 {
     int count_red = 0;
     for (int currentRedTank : red_health_bars)
     {
-        DrawHealthBars(count_red, 'r', currentRedTank);
+        draw_health_bars(count_red, 'r', currentRedTank);
         count_red++;
     }
     //Bucketsort draw health Red Tanks
@@ -537,14 +537,14 @@ void BattleSim::Game::DrawRedHealth()
         LinkedListnode* currentRedTank = bucket.head;
         while (currentRedTank != nullptr)
         {
-            DrawHealthBars(count_red, 'r', currentRedTank->data);
+            draw_health_bars(count_red, 'r', currentRedTank->data);
             currentRedTank = currentRedTank->next;
             count_red++;
         }
     }*/
 }
 
-void BattleSim::Game::DrawHealthBars(int i, char color, int health)
+void BattleSim::Game::draw_health_bars(int i, char color, int health)
 {
     int health_bar_start_x = i * (HEALTH_BAR_WIDTH + HEALTH_BAR_SPACING) + HEALTH_BARS_OFFSET_X;
     int health_bar_start_y = (color == 'b') ? 0 : (SCRHEIGHT - HEALTH_BAR_HEIGHT) - 1;

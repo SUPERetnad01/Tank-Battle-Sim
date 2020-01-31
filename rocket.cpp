@@ -3,7 +3,7 @@
 
 namespace BattleSim
 {
-Rocket::Rocket(Grid* _grid,vec2 position, vec2 direction, float collision_radius, allignments allignment, Sprite* rocket_sprite)
+Rocket::Rocket(Grid* _grid, vec2 position, vec2 direction, float collision_radius, allignments allignment, Sprite* rocket_sprite)
     : grid(_grid), position(position), speed(direction), collision_radius(collision_radius), allignment(allignment), current_frame(0), rocket_sprite(rocket_sprite), active(true)
 {
 }
@@ -18,7 +18,6 @@ void Rocket::Tick()
     position += speed;
     this->grid->moveRocket2NewCell(this, oldPosition);
     if (++current_frame > 8) current_frame = 0;
-    
 }
 
 //Draw the sprite with the facing based on this rockets movement direction

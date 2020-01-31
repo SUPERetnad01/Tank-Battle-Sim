@@ -1,17 +1,21 @@
 #include "precomp.h"
-#include "Grid.h"
+//#include "Grid.h"
 #include <cmath>
+
+mutex grid_mutex;
 
 BattleSim::Grid::Grid()
 {
     //clear the grid
-    for (int y = 0; y < numberOfCells; y++)
-    {
-        for (int x = 0; x < numberOfCells; ++x)
+    tbb::parallel_for(tbb::blocked_range<int>(0, numberOfCells), [&](tbb::blocked_range<int> r) {
+        for (int y = r.begin(); y < r.end(); y++)
         {
-            tankcells[x][y].empty();
+            for (int x = r.begin(); x < r.end(); x++)
+            {
+                tankcells[x][y].empty();
+            }
         }
-    }
+    });
 }
 
 BattleSim::Grid::~Grid()
@@ -23,7 +27,6 @@ void BattleSim::Grid::addTank2Cell(Tank* tank)
     int cellX = (int)((tank->position.x / Grid::sizeOfCell) + gridOffset);
     int cellY = (int)((tank->position.y / Grid::sizeOfCell) + gridOffset);
     tankcells[cellX][cellY].push_back(tank);
-
 }
 
 void BattleSim::Grid::moveTank2NewCell(Tank* tank, vec2 oldposition)
@@ -37,14 +40,14 @@ void BattleSim::Grid::moveTank2NewCell(Tank* tank, vec2 oldposition)
 
     // If it didn't change cells, we're done.
     if (oldCellX == cellX && oldCellY == cellY) return;
-    vector<Tank*> &temp = tankcells[oldCellX][oldCellY];
-   /* if (temp.size() > largestsize) {
+    vector<Tank*>& temp = tankcells[oldCellX][oldCellY];
+    /* if (temp.size() > largestsize) {
         largestsize = temp.size();
         cout << largestsize << endl;
     }*/
     for (int i = 0; i < temp.size(); i++)
     {
-        if (temp[i] == tank ) // || temp[i]->active == false check ignor dead tanks 
+        if (temp[i] == tank) // || temp[i]->active == false check ignor dead tanks
         {
             temp.erase(temp.begin() + i);
         }
@@ -55,12 +58,13 @@ void BattleSim::Grid::moveTank2NewCell(Tank* tank, vec2 oldposition)
     addTank2Cell(tank);
 }
 
-void BattleSim::Grid::handleTankCell(int x ,int y ,Tank* tank)
-{                                                           //     1 | 2 | 3
-    vector<Tank*> currentTankCell = tankcells[x][y];        //     4 | 5 | 6
-    if(tank != nullptr)                                     //     7 | 8 | 9
+void BattleSim::Grid::handleTankCell(int x, int y, Tank* tank)
+{                                                    //     1 | 2 | 3
+    vector<Tank*> currentTankCell = tankcells[x][y]; //     4 | 5 | 6
+    if (tank != nullptr)                             //     7 | 8 | 9
     {
-        if (currentTankCell.size() != 0) {
+        if (currentTankCell.size() != 0)
+        {
             handleTank(tank, currentTankCell);
         }
         if (x < numberOfCells - 1)
@@ -84,30 +88,32 @@ void BattleSim::Grid::handleTankCell(int x ,int y ,Tank* tank)
 
         if (x < numberOfCells - 1 && y > 0)
         {
-            handleTank(tank, tankcells[x + 1][y - 1]); //9    
+            handleTank(tank, tankcells[x + 1][y - 1]); //9
         }
         if (x < numberOfCells - 1 && y < numberOfCells - 1)
         {
-            handleTank(tank, tankcells[x + 1][y + 1]); // 3  
+            handleTank(tank, tankcells[x + 1][y + 1]); // 3
         }
-        if (x > 0 && y < numberOfCells - 1){
+        if (x > 0 && y < numberOfCells - 1)
+        {
             handleTank(tank, tankcells[x - 1][y + 1]); // 1
-         }
-        if (y < numberOfCells - 1){
+        }
+        if (y < numberOfCells - 1)
+        {
             handleTank(tank, tankcells[x][y + 1]); // 2
-        }  
+        }
     }
 }
 
 void BattleSim::Grid::handleTank(Tank* tank, vector<Tank*> othertanks)
-{ 
-    for (auto othertank : othertanks){
+{
+    for (auto othertank : othertanks)
+    {
         if (tank != othertank && othertank != nullptr)
         {
             collision(tank, othertank);
-            
         }
-    }    
+    }
 }
 
 void BattleSim::Grid::collision(Tank* tank, Tank* other)
@@ -129,33 +135,36 @@ void BattleSim::Grid::moveRocket2NewCell(Rocket* rocket, vec2 oldposition)
     int oldCellX = (int)((oldposition.x / Grid::sizeOfCell) + gridOffset);
     int oldCellY = (int)((oldposition.y / Grid::sizeOfCell) + gridOffset);
 
-        int cellX = (int)((rocket->position.x / Grid::sizeOfCell) + gridOffset);
-        int cellY = (int)((rocket->position.y / Grid::sizeOfCell) + gridOffset);
-        if (cellX < 0 || cellY < 0)
-        {
-            rocket->active = false;
-            return;
-        }
-        // If it didn't change cells, we're done.
-        if (oldCellX == cellX && oldCellY == cellY) return;
-       
-
-        // Add it back to the grid at its new cell.
-        handelRocketCell(cellX, cellY, rocket);
+    int cellX = (int)((rocket->position.x / Grid::sizeOfCell) + gridOffset);
+    int cellY = (int)((rocket->position.y / Grid::sizeOfCell) + gridOffset);
+    if (cellX < 0 || cellY < 0)
+    {
+        rocket->active = false;
+        return;
     }
-    // handelCell(cellX,cellY);
     // If it didn't change cells, we're done.
-    
+    if (oldCellX == cellX && oldCellY == cellY) return;
 
-void BattleSim::Grid::handelRocketCell(int x, int y,Rocket* rocket)
+    // Add it back to the grid at its new cell.
+    handelRocketCell(cellX, cellY, rocket);
+}
+// handelCell(cellX,cellY);
+// If it didn't change cells, we're done.
+
+void BattleSim::Grid::handelRocketCell(int x, int y, Rocket* rocket)
 {
     vector<Tank*> tanks = tankcells[x][y];
-    for (auto tank : tanks) {
-        if (tank->active)
+
+    tbb::parallel_for(tbb::blocked_range<int>(0, tanks.size()), [&](tbb::blocked_range<int> r) {
+        for (int i = r.begin(); i < r.end(); ++i)
         {
-            handelRocket(rocket, tank);
+            if (tanks[i]->active)
+            {
+                scoped_lock(grid_mutex);
+                handelRocket(rocket, tanks[i]);
+            }
         }
-    }
+    });
 }
 
 void BattleSim::Grid::handelRocket(Rocket* rocket, Tank* tank)
