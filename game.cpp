@@ -50,8 +50,12 @@ static Sprite particle_beam_sprite(particle_beam_img, 3);
 const static vec2 tank_size(14, 18);
 const static vec2 rocket_size(25, 24);
 
-vector<LinkedList> redHealthBars = {};
-vector<LinkedList> blueHealthBars = {};
+//Bucket sort Vars
+//vector<LinkedList> redHealthBars = {};
+//vector<LinkedList> blueHealthBars = {};
+
+vector<int> red_health_bars = {};
+vector<int> blue_health_bars = {};
 vec2 nullpoint = {0, -2000};
 vec2 Maxborder = {SCRWIDTH, SCRHEIGHT};
 QuadTree *redTanksQTree = new QuadTree(Maxborder, nullpoint);;
@@ -459,6 +463,7 @@ void BattleSim::Game::UpdateParticalBeams()
                       });
 }
 
+/*
 vector<LinkedList> BattleSim::Game::BucketSort(vector<Tank*>& unsortedtanks, int numberofbuckets)
 {
     vector<LinkedList> buckets(numberofbuckets);
@@ -468,27 +473,79 @@ vector<LinkedList> BattleSim::Game::BucketSort(vector<Tank*>& unsortedtanks, int
     }
     return buckets;
 }
+*/
+
+std::vector<int> BattleSim::Game::CountSort(const vector<Tank*>& in)
+{
+    std::vector<int> Counters(TANK_MAX_HEALTH + 1, 0);
+    std::vector<int> Results;
+
+    for (auto x : in)
+        Counters.at(x->health <= 0 ? 0 : x->health)++;
+
+    for (int i = 0; i < TANK_MAX_HEALTH + 1; ++i)
+        if (Counters[i] != 0)
+            for (int y = 0; y < Counters[i]; ++y)
+                Results.push_back(i);
+
+    return Results;
+}
 
 void BattleSim::Game::SortHealthBars()
 {
-    redHealthBars = BucketSort(redTanks, 100);
-    blueHealthBars = BucketSort(blueTanks, 100);
+    //redHealthBars = BucketSort(redTanks, 100);
+    //blueHealthBars = BucketSort(blueTanks, 100);
+
+    red_health_bars = CountSort(redTanks);
+    blue_health_bars = CountSort(blueTanks);
 }
 
 void BattleSim::Game::DrawBlueHealth()
 {
-    int countBlue = 0;
-    for (auto& bucket : blueHealthBars)
+    int count_blue = 0;
+    for (int currentBlueTank : blue_health_bars)
+    {
+        DrawHealthBars(count_blue, 'b', currentBlueTank);
+        count_blue++;
+    }
+
+    //Bucketsort draw health Blue Tanks
+    /*
+    for (auto& bucket : blue_health_bars)
     {
         LinkedListnode* currentBlueTank = bucket.head;
         while (currentBlueTank != nullptr)
         {
-            DrawHealthBars(countBlue, 'b', currentBlueTank->data);
+            DrawHealthBars(count_blue, 'b', currentBlueTank->data);
             currentBlueTank = currentBlueTank->next;
-            countBlue++;
+            count_blue++;
         }
     }
+    */
 }
+
+void BattleSim::Game::DrawRedHealth()
+{
+    int count_red = 0;
+    for (int currentRedTank : red_health_bars)
+    {
+        DrawHealthBars(count_red, 'r', currentRedTank);
+        count_red++;
+    }
+    //Bucketsort draw health Red Tanks
+    /*
+    for (auto& bucket : red_health_bars)
+    {
+        LinkedListnode* currentRedTank = bucket.head;
+        while (currentRedTank != nullptr)
+        {
+            DrawHealthBars(count_red, 'r', currentRedTank->data);
+            currentRedTank = currentRedTank->next;
+            count_red++;
+        }
+    }*/
+}
+
 void BattleSim::Game::DrawHealthBars(int i, char color, int health)
 {
     int health_bar_start_x = i * (HEALTH_BAR_WIDTH + HEALTH_BAR_SPACING) + HEALTH_BARS_OFFSET_X;
@@ -500,20 +557,7 @@ void BattleSim::Game::DrawHealthBars(int i, char color, int health)
     screen->Bar(health_bar_start_x, health_bar_start_y + (int)((double)HEALTH_BAR_HEIGHT * (1 - ((double)health / (double)TANK_MAX_HEALTH))),
                 health_bar_end_x, health_bar_end_y, GREENMASK);
 }
-void BattleSim::Game::DrawRedHealth()
-{
-    int countRed = 0;
-    for (auto& bucket : redHealthBars)
-    {
-        LinkedListnode* currentRedTank = bucket.head;
-        while (currentRedTank != nullptr)
-        {
-            DrawHealthBars(countRed, 'r', currentRedTank->data);
-            currentRedTank = currentRedTank->next;
-            countRed++;
-        }
-    }
-}
+
 
 void BattleSim::Game::GPGPU(Tank* tank)
 {

@@ -30,6 +30,7 @@ class Game
     void UpdateRockets();
     void UpdateParticalBeams();
     std::vector<LinkedList> BucketSort(std::vector<Tank*>& unsortedTanks, int numberofbuckets);
+    std::vector<int> CountSort(const vector<Tank*>& in);
     void SortHealthBars();
     void DrawBlueHealth();
     void DrawRedHealth();
