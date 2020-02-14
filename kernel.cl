@@ -26,9 +26,9 @@ float2 getforce(int cellposition, __global int* tankGrid, __global float* xTank,
             dirY = yTank[currentTank] - yTank[tankId];
 
             result = ((dirX * dirX) + (dirY * dirY));
-            printf("xtank %f ytank %f xothertank %f yothertank %f result %f id: %d\n", xTank[currentTank], yTank[currentTank], xTank[tankId], yTank[tankId] ,result,currentTank);
+            //printf("xtank %f ytank %f xothertank %f yothertank %f result %f id: %d\n", xTank[currentTank], yTank[currentTank], xTank[tankId], yTank[tankId] ,result,currentTank);
             //printf("dirX %f dirY %f id: %d\n", dirX, dirY, currentTank);
-            if (result < colSquaredLen)
+            if (result < colSquaredLen && tankId > currentTank)
             {
                 //printf("collided currentTank %d  otherTank %d\n",currentTank,tankId);
                 float length = sqrt((dirX * dirX) + (dirY * dirY));
@@ -41,17 +41,20 @@ float2 getforce(int cellposition, __global int* tankGrid, __global float* xTank,
     }
     //printf("forceX: %f forceY: %f Id: %d\n", forcex, forcey, currentTank);
     float2 direction = {forcex, forcey};
+    forcex =0;
+    forcey =0;
     return direction;
 }
-__kernel void tank_collision(__global const int* tankGrid, __global const float* xTank, __global const float* yTank, __global float* xTankOut, __global float* yTankOut)
+__kernel void tank_collision(__global const int* tankGrid, __global const float* xTank, __global const float* yTank, __global float* xForce, __global float* yForce)
 {
 
     int i = get_global_id(0);
     const int cellsize = 26;
     const int gridOffset = 15;
     const int numberOfCells = 250;
-    const int maximumUnitsInCell = 10;
-    if (i < 50)
+    const int maximumUnitsInCell = 200;
+    const int threadspoepe = 1280;
+    if (i < threadspoepe)
     {
         float2 force = {0, 0};
         int cellX = (int)((xTank[i] / cellsize) + gridOffset);
@@ -62,7 +65,6 @@ __kernel void tank_collision(__global const int* tankGrid, __global const float*
         //prints input data
         //printf(" celoftank %d  xTank %f yTank %f || CellX %d CellY %d  || Id %d\n" ,celloftank, xTank[i], yTank[i], cellX , cellY , i);
         force += getforce(celloftank, tankGrid, xTank, yTank, i);
-        /*
         if (cellY < numberOfCells - 1)
         {
             int cellNorth = (cellY + 1 * (numberOfCells * maximumUnitsInCell)) + (cellX * maximumUnitsInCell);
@@ -109,9 +111,8 @@ __kernel void tank_collision(__global const int* tankGrid, __global const float*
             int cellSouthWest = ((cellY + 1) * (numberOfCells * maximumUnitsInCell)) + ((cellX + 1) * maximumUnitsInCell);
             force += getforce(cellSouthWest, tankGrid, xTank, yTank, i);
         }
-        */
         //printf("GPU foce x: %f force y: %f ID: %d \n",force.x , force.y , i);
-        xTankOut[i] = cellX;
-        yTankOut[i] = cellY;
+        xForce[i] = force.x;
+        yForce[i] = force.y;
     }
 }

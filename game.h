@@ -69,8 +69,8 @@ class Game
     cl_mem ygrid_mem_obj;
     cl_mem xtank_mem_obj;
     cl_mem ytank_mem_obj;
-    cl_mem xtankout_mem_obj;
-    cl_mem ytankout_mem_obj;
+    cl_mem tank_force_x_mem_obj;
+    cl_mem tank_force_y_mem_obj;
 
     Surface* screen;
     vec2 topright = (SCRWIDTH, SCRHEIGHT);
@@ -83,16 +83,15 @@ class Game
     vector<Tank*> redTanks;
     Font* frame_count_font;
 
-    static const int totalTanks = 50;
+    static const int totalTanks = 1280; //2558;
     static const int numberOfCells = 250;
-    static const int maximumUnitsInCell = 10;
-    static const int demensions = 2;
+    static const int maximumUnitsInCell = 200;
     int gridarrys = numberOfCells * numberOfCells * maximumUnitsInCell;
     int tankGrid[numberOfCells * numberOfCells * maximumUnitsInCell];
     float xTank[totalTanks];
     float yTank[totalTanks];
-    float xTankOut[totalTanks];
-    float yTankOut[totalTanks];
+    float xForce[totalTanks];
+    float yForce[totalTanks];
     char tankcolour[totalTanks];
     long long frame_count = 0;
     Grid grid;

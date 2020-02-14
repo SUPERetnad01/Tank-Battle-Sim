@@ -1,9 +1,9 @@
 #include "precomp.h" // include (only) this in every .cpp file
 #include <CL/cl.h>
 
-#define NUM_TANKS_BLUE 25
-#define NUM_TANKS_RED 25
-#define NUM_TANKS_TOTAL 50
+#define NUM_TANKS_BLUE 640   //1279
+#define NUM_TANKS_RED 640    //1279
+#define NUM_TANKS_TOTAL 1280 //2558
 #define TANK_MAX_HEALTH 1000
 #define ROCKET_HIT_VALUE 60
 #define PARTICLE_BEAM_HIT_VALUE 50
@@ -70,8 +70,8 @@ mutex mtx;
 void Game::Init()
 {
     // Create the two input vectors
-    memset(xTankOut, 0.0f, sizeof(xTankOut));
-    memset(yTankOut, 0.0f, sizeof(yTankOut));
+    memset(xForce, 0.0f, sizeof(xForce));
+    memset(yForce, 0.0f, sizeof(yForce));
     for (int i = 0; i < gridarrys; i++)
     {
         tankGrid[i] = -1;
@@ -107,8 +107,8 @@ void Game::Init()
     xtank_mem_obj = clCreateBuffer(context, CL_MEM_READ_ONLY, totalTanks * sizeof(float), NULL, &ret);
     ytank_mem_obj = clCreateBuffer(context, CL_MEM_READ_ONLY, totalTanks * sizeof(float), NULL, &ret);
 
-    xtankout_mem_obj = clCreateBuffer(context, CL_MEM_WRITE_ONLY, totalTanks * sizeof(float), NULL, &ret);
-    ytankout_mem_obj = clCreateBuffer(context, CL_MEM_WRITE_ONLY, totalTanks * sizeof(float), NULL, &ret);
+    tank_force_x_mem_obj = clCreateBuffer(context, CL_MEM_WRITE_ONLY, totalTanks * sizeof(float), NULL, &ret);
+    tank_force_y_mem_obj = clCreateBuffer(context, CL_MEM_WRITE_ONLY, totalTanks * sizeof(float), NULL, &ret);
 
     // Create a program from the kernel source
     program = clCreateProgramWithSource(context, 1,
@@ -152,8 +152,8 @@ void Game::Init()
     ret = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&tankGrid_mem_obj);
     ret = clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&xtank_mem_obj);
     ret = clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&ytank_mem_obj);
-    ret = clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&xtankout_mem_obj);
-    ret = clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&ytankout_mem_obj);
+    ret = clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&tank_force_x_mem_obj);
+    ret = clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&tank_force_y_mem_obj);
 
     ///////
     frame_count_font = new Font("assets/digital_small.png", "ABCDEFGHIJKLMNOPQRSTUVWXYZ:?!=-0123456789.");
@@ -164,23 +164,23 @@ void Game::Init()
     uint rows = (uint)sqrt(NUM_TANKS_BLUE + NUM_TANKS_RED);
     uint max_rows = 12;
 
-    float start_blue_x = tank_size.x + 10.0f;
-    float start_blue_y = tank_size.y + 80.0f;
+    const float start_blue_x = tank_size.x + 10.0f;
+    const float start_blue_y = tank_size.y + 80.0f;
 
-    float start_red_x = 980.0f;
-    float start_red_y = 100.0f;
+    const float start_red_x = 980.0f;
+    const float start_red_y = 100.0f;
 
     float spacing = 15.0f;
 
     //Spawn blue tanks
     for (int i = 0; i < NUM_TANKS_BLUE; i++)
     {
-        tanks.push_back(Tank(&grid,i, start_blue_x + ((i % max_rows) * spacing), start_blue_y + ((i / max_rows) * spacing), BLUE, &tank_blue, &smoke, 1200, 600, tank_radius, TANK_MAX_HEALTH, TANK_MAX_SPEED));
+        tanks.push_back(Tank(&grid, i, start_blue_x + ((i % max_rows) * spacing), start_blue_y + ((i / max_rows) * spacing), BLUE, &tank_blue, &smoke, 1200, 600, tank_radius, TANK_MAX_HEALTH, TANK_MAX_SPEED));
     }
     //Spawn red tanks
     for (int i = 0; i < NUM_TANKS_RED; i++)
     {
-        tanks.push_back(Tank(&grid, i + NUM_TANKS_RED ,start_red_x + ((i % max_rows) * spacing), start_red_y + ((i / max_rows) * spacing), RED, &tank_red, &smoke, 80, 80, tank_radius, TANK_MAX_HEALTH, TANK_MAX_SPEED));
+        tanks.push_back(Tank(&grid, i + NUM_TANKS_RED, start_red_x + ((i % max_rows) * spacing), start_red_y + ((i / max_rows) * spacing), RED, &tank_red, &smoke, 80, 80, tank_radius, TANK_MAX_HEALTH, TANK_MAX_SPEED));
     }
     int i = 0;
     for (Tank& tank : tanks)
@@ -197,6 +197,7 @@ void Game::Init()
             if (tankGrid[cellpos + i] == -1)
             {
                 tankGrid[cellpos + i] = tank.id;
+                //printf("cellpos %d tankid %d\n", cellpos + i, tank.id);
                 break;
             }
         }
@@ -218,7 +219,7 @@ void Game::Init()
     particle_beams.push_back(Particle_beam(vec2(SCRWIDTH / 2, SCRHEIGHT / 2), vec2(100, 50), &particle_beam_sprite, PARTICLE_BEAM_HIT_VALUE));
     particle_beams.push_back(Particle_beam(vec2(80, 80), vec2(100, 50), &particle_beam_sprite, PARTICLE_BEAM_HIT_VALUE));
     particle_beams.push_back(Particle_beam(vec2(1200, 600), vec2(100, 50), &particle_beam_sprite, PARTICLE_BEAM_HIT_VALUE));
-    GPGPU();
+    //GPGPU();
 }
 
 // -----------------------------------------------------------
@@ -237,8 +238,8 @@ Game::~Game()
     ret = clReleaseMemObject(tankGrid_mem_obj);
     ret = clReleaseMemObject(xtank_mem_obj);
     ret = clReleaseMemObject(ytank_mem_obj);
-    ret = clReleaseMemObject(xtankout_mem_obj);
-    ret = clReleaseMemObject(ytankout_mem_obj);
+    ret = clReleaseMemObject(tank_force_x_mem_obj);
+    ret = clReleaseMemObject(tank_force_y_mem_obj);
     ret = clReleaseCommandQueue(command_queue);
     ret = clReleaseContext(context);
     delete frame_count_font;
@@ -249,9 +250,26 @@ Game::~Game()
 // -----------------------------------------------------------
 Tank& Game::FindClosestEnemy(Tank& current_tank)
 {
-    auto result = allTanksQTree->FindClosest(current_tank, nullptr, numeric_limits<float>::infinity());
+    /* auto result = allTanksQTree->FindClosest(current_tank, nullptr, numeric_limits<float>::infinity());
     auto closesttank = get<0>(result);
-    return *closesttank;
+    return *closesttank;*/
+    float closest_distance = numeric_limits<float>::infinity();
+    int closest_index = 0;
+
+    for (int i = 0; i < tanks.size(); i++)
+    {
+        if (tanks.at(i).allignment != current_tank.allignment && tanks.at(i).active)
+        {
+            float sqrDist = fabsf((tanks.at(i).Get_Position() - current_tank.Get_Position()).sqrLength());
+            if (sqrDist < closest_distance)
+            {
+                closest_distance = sqrDist;
+                closest_index = i;
+            }
+        }
+    }
+
+    return tanks.at(closest_index);
 }
 
 // -----------------------------------------------------------
@@ -264,8 +282,8 @@ Tank& Game::FindClosestEnemy(Tank& current_tank)
 void Game::Update(float deltaTime)
 {
     //Update tanks
-    UpdateTanks();
 
+    GPGPU();
     //Update smoke plumes
     //for (Smoke& _smoke : smokes)
     tbb::parallel_for(tbb::blocked_range<int>(0, smokes.size()), [&](tbb::blocked_range<int> r) {
@@ -295,6 +313,8 @@ void Game::Update(float deltaTime)
 
     explosions.erase(std::remove_if(explosions.begin(), explosions.end(), [](const Explosion& _explosion) { return _explosion.done(); }), explosions.end());
     sort_health_bars();
+    clFinish(command_queue);
+    UpdateTanks();
 }
 
 void Game::Draw()
@@ -400,6 +420,10 @@ void BattleSim::Game::UpdateTanks()
     {
         if (tank.active)
         {
+            const vec2 new_force = (xForce[tank.id], yForce[tank.id]);
+            tank.force = new_force;
+            const int old_Cell_X = (int)((tank.position.x / Grid::sizeOfCell) + gridOffset);
+            const int old_Cell_Y = (int)((tank.position.y / Grid::sizeOfCell) + gridOffset);
             //QuadTreebasedColision
             //GPGPU(&tank);
             /*  vector<Tank*> allNodesInRange;
@@ -412,9 +436,67 @@ void BattleSim::Game::UpdateTanks()
                     tank.Push(dir.normalized(), 1.0f);
                 }
             } */
-            tank.grid->handleTankCell(tank.CellX, tank.CellY, &tank);
+            //tank.grid->handleTankCell(tank.CellX, tank.CellY, &tank);
             allTanksQTree->removeNode(&tank);
             tank.Tick();
+            tank.CellX = (int)((tank.position.x / Grid::sizeOfCell) + gridOffset);
+            tank.CellY = (int)((tank.position.y / Grid::sizeOfCell) + gridOffset);
+            xTank[tank.id] = tank.position.x;
+            yTank[tank.id] = tank.position.y;
+            bool inserted = false;
+            if (tank.CellX != old_Cell_X || tank.CellY != old_Cell_Y)
+            {
+                const int old_Cell_Pos = (old_Cell_Y * (numberOfCells * maximumUnitsInCell)) + (old_Cell_X * maximumUnitsInCell);
+                const int cell_pos = (tank.CellY * (numberOfCells * maximumUnitsInCell)) + (tank.CellX * maximumUnitsInCell);
+                //for (int i = 0; i < maximumUnitsInCell; i++)
+                //{
+                //    printf("before moving : old_Cell_Pos %d cell_pos %d \n", tankGrid[old_Cell_Pos + i], tankGrid[cell_pos + i]);
+
+                //}
+                if (tankGrid[old_Cell_Pos + maximumUnitsInCell -1] !=-1)
+                {
+                    printf("%d \n", tankGrid[old_Cell_Pos + maximumUnitsInCell]);
+                    for (int i = 0; i < maximumUnitsInCell; i++)
+                    {
+                        printf("%d \n", tankGrid[old_Cell_Pos + i]);
+                    }
+                    int x = 0;
+                }
+                for (int i = 0; i < maximumUnitsInCell; i++)
+                {
+                    
+                        if (tankGrid[old_Cell_Pos + i] == tank.id)
+                        {
+                            tankGrid[old_Cell_Pos + i] = -69;
+                            for (int j = 0; j < maximumUnitsInCell - i; j++)
+                            {
+                                if (tankGrid[old_Cell_Pos + i + j] == -69)
+                                {
+                                    if (tankGrid[old_Cell_Pos + i + j + 1] == -1)
+                                    {
+                                        tankGrid[old_Cell_Pos + i + j] = -1;
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        tankGrid[old_Cell_Pos + i + j] = tankGrid[old_Cell_Pos + i + j + 1];
+                                        tankGrid[old_Cell_Pos + i + j + 1] = -69;
+                                    }
+                                }
+                            }
+                        }
+                    if (tankGrid[cell_pos + i] == -1 && !inserted)
+                    {
+                        tankGrid[cell_pos + i] = tank.id;
+                        inserted = true;
+                    }
+                }
+                /*for (int i = 0; i < maximumUnitsInCell; i++)
+                {
+                    printf("after moving: old_Cell_Pos %d cell_pos %d \n", tankGrid[old_Cell_Pos+i],tankGrid[cell_pos+i]);
+                }*/
+                int x = 0;
+            }
             allTanksQTree->insertNode(&tank);
             if (tank.Rocket_Reloaded())
             {
@@ -578,14 +660,14 @@ void BattleSim::Game::GPGPU()
     ret = clEnqueueWriteBuffer(command_queue, xtank_mem_obj, CL_TRUE, 0,
                                totalTanks * sizeof(float), xTank, 0, NULL, NULL);
 
-    size_t global_item_size = totalTanks + 14; // Process the entire lists, +2 so it divides by 64
-    size_t local_item_size = 64;               // Divide work items into groups of 64
+    size_t global_item_size = totalTanks; //+ 2; // Process the entire lists, +2 so it divides by 64
+    size_t local_item_size = 64;          // Divide work items into groups of 64
     ret = clEnqueueNDRangeKernel(command_queue, kernel, 1, NULL,
                                  &global_item_size, &local_item_size, 0, NULL, NULL);
-    ret = clEnqueueReadBuffer(command_queue, xtankout_mem_obj, CL_FALSE, 0,
-                              totalTanks * sizeof(float), xTankOut, 0, NULL, NULL);
-    ret = clEnqueueReadBuffer(command_queue, ytankout_mem_obj, CL_FALSE, 0,
-                              totalTanks * sizeof(float), yTankOut, 0, NULL, NULL);
+    ret = clEnqueueReadBuffer(command_queue, tank_force_x_mem_obj, CL_FALSE, 0,
+                              totalTanks * sizeof(float), xForce, 0, NULL, NULL);
+    ret = clEnqueueReadBuffer(command_queue, tank_force_y_mem_obj, CL_FALSE, 0,
+                              totalTanks * sizeof(float), yForce, 0, NULL, NULL);
 }
 
 // -----------------------------------------------------------

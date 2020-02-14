@@ -59,7 +59,7 @@ Tank::Tank(Grid* grid_,
         }
 
         force = vec2(0.f, 0.f);
-        this->grid->moveTank2NewCell(this, oldposition);
+        //this->grid->moveTank2NewCell(this, oldposition);
         if (++current_frame > 8) current_frame = 0;
     }
 
