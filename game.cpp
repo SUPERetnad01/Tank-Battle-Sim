@@ -1,9 +1,9 @@
 #include "precomp.h" // include (only) this in every .cpp file
 #include <CL/cl.h>
 
-#define NUM_TANKS_BLUE 1279
-#define NUM_TANKS_RED 1279
-#define NUM_TANKS_TOTAL 2558
+#define NUM_TANKS_BLUE 25
+#define NUM_TANKS_RED 25
+#define NUM_TANKS_TOTAL 50
 #define TANK_MAX_HEALTH 1000
 #define ROCKET_HIT_VALUE 60
 #define PARTICLE_BEAM_HIT_VALUE 50
@@ -57,7 +57,6 @@ vector<int> blue_health_bars = {};
 vec2 nullpoint = {0, -2000};
 vec2 Maxborder = {SCRWIDTH, SCRHEIGHT};
 QuadTree* redTanksQTree = new QuadTree(Maxborder, nullpoint);
-;
 QuadTree* blueTanksQTree = new QuadTree(Maxborder, nullpoint);
 QuadTree* allTanksQTree = new QuadTree(Maxborder, nullpoint);
 
@@ -70,19 +69,14 @@ mutex mtx;
 // Initialize the application
 void Game::Init()
 {
-    ////////
     // Create the two input vectors
-    int i;
-    const int LIST_SIZE = 1024;
-    int* A = (int*)malloc(sizeof(int) * LIST_SIZE);
-    int* B = (int*)malloc(sizeof(int) * LIST_SIZE);
-    for (i = 0; i < LIST_SIZE; i++)
+    memset(xTankOut, 0.0f, sizeof(xTankOut));
+    memset(yTankOut, 0.0f, sizeof(yTankOut));
+    for (int i = 0; i < gridarrys; i++)
     {
-        A[i] = i;
-        B[i] = LIST_SIZE - i;
+        tankGrid[i] = -1;
     }
 
-    // Load the kernel source code into the array source_str
     FILE* fp;
     char* source_str;
     size_t source_size;
@@ -97,84 +91,72 @@ void Game::Init()
     source_size = fread(source_str, 1, MAX_SOURCE_SIZE, fp);
     fclose(fp);
 
-    // Get platform and device information
     cl_platform_id platform_id = NULL;
     cl_device_id device_id = NULL;
     cl_uint ret_num_devices;
     cl_uint ret_num_platforms;
-    cl_int ret = clGetPlatformIDs(1, &platform_id, &ret_num_platforms);
+    ret = clGetPlatformIDs(1, &platform_id, &ret_num_platforms);
     ret = clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_DEFAULT, 1,
                          &device_id, &ret_num_devices);
 
-    // Create an OpenCL context
-    cl_context context = clCreateContext(NULL, 1, &device_id, NULL, NULL, &ret);
+    context = clCreateContext(NULL, 1, &device_id, NULL, NULL, &ret);
 
-    // Create a command queue
-    cl_command_queue command_queue = clCreateCommandQueue(context, device_id, 0, &ret);
+    command_queue = clCreateCommandQueue(context, device_id, 0, &ret);
 
-    // Create memory buffers on the device for each vector
-    cl_mem a_mem_obj = clCreateBuffer(context, CL_MEM_READ_ONLY,
-                                      LIST_SIZE * sizeof(int), NULL, &ret);
-    cl_mem b_mem_obj = clCreateBuffer(context, CL_MEM_READ_ONLY,
-                                      LIST_SIZE * sizeof(int), NULL, &ret);
-    cl_mem c_mem_obj = clCreateBuffer(context, CL_MEM_WRITE_ONLY,
-                                      LIST_SIZE * sizeof(int), NULL, &ret);
+    tankGrid_mem_obj = clCreateBuffer(context, CL_MEM_READ_ONLY, gridarrys * sizeof(int), NULL, &ret);
+    xtank_mem_obj = clCreateBuffer(context, CL_MEM_READ_ONLY, totalTanks * sizeof(float), NULL, &ret);
+    ytank_mem_obj = clCreateBuffer(context, CL_MEM_READ_ONLY, totalTanks * sizeof(float), NULL, &ret);
 
-    // Copy the lists A and B to their respective memory buffers
-    ret = clEnqueueWriteBuffer(command_queue, a_mem_obj, CL_TRUE, 0,
-                               LIST_SIZE * sizeof(int), A, 0, NULL, NULL);
-    ret = clEnqueueWriteBuffer(command_queue, b_mem_obj, CL_TRUE, 0,
-                               LIST_SIZE * sizeof(int), B, 0, NULL, NULL);
+    xtankout_mem_obj = clCreateBuffer(context, CL_MEM_WRITE_ONLY, totalTanks * sizeof(float), NULL, &ret);
+    ytankout_mem_obj = clCreateBuffer(context, CL_MEM_WRITE_ONLY, totalTanks * sizeof(float), NULL, &ret);
 
     // Create a program from the kernel source
-    cl_program program = clCreateProgramWithSource(context, 1,
-                                                   (const char**)&source_str, (const size_t*)&source_size, &ret);
-
+    program = clCreateProgramWithSource(context, 1,
+                                        (const char**)&source_str, (const size_t*)&source_size, &ret);
     // Build the program
     ret = clBuildProgram(program, 1, &device_id, NULL, NULL, NULL);
 
-    // Create the OpenCL kernel
-    cl_kernel kernel = clCreateKernel(program, "vector_add", &ret);
+    if (ret != CL_SUCCESS)
+    {
+        char* buff_erro;
+        cl_int errcode;
+        size_t build_log_len;
+        errcode = clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, 0, NULL, &build_log_len);
+        if (errcode)
+        {
+            printf("clGetProgramBuildInfo failed at line %d\n", __LINE__);
+            exit(-1);
+        }
 
-    // Set the arguments of the kernel
-    ret = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&a_mem_obj);
-    ret = clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&b_mem_obj);
-    ret = clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&c_mem_obj);
+        buff_erro = (char*)malloc(build_log_len);
+        if (!buff_erro)
+        {
+            printf("malloc failed at line %d\n", __LINE__);
+            exit(-2);
+        }
 
-    // Execute the OpenCL kernel on the list
-    size_t global_item_size = LIST_SIZE; // Process the entire lists
-    size_t local_item_size = 64;         // Divide work items into groups of 64
-    ret = clEnqueueNDRangeKernel(command_queue, kernel, 1, NULL,
-                                 &global_item_size, &local_item_size, 0, NULL, NULL);
+        errcode = clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, build_log_len, buff_erro, NULL);
+        if (errcode)
+        {
+            printf("clGetProgramBuildInfo failed at line %d\n", __LINE__);
+            exit(-3);
+        }
 
-    // Read the memory buffer C on the device to the local variable C
-    int* C = (int*)malloc(sizeof(int) * LIST_SIZE);
-    ret = clEnqueueReadBuffer(command_queue, c_mem_obj, CL_TRUE, 0,
-                              LIST_SIZE * sizeof(int), C, 0, NULL, NULL);
+        fprintf(stderr, "Build log: \n%s\n", buff_erro); //Be careful with  the fprint
+        free(buff_erro);
+        fprintf(stderr, "clBuildProgram failed\n");
+    }
 
-    // Display the result to the screen
-    for (i = 0; i < LIST_SIZE; i++)
-        // printf("%d + %d = %d\n", A[i], B[i], C[i]);
-
-        // Clean up
-        ret = clFlush(command_queue);
-    ret = clFinish(command_queue);
-    ret = clReleaseKernel(kernel);
-    ret = clReleaseProgram(program);
-    ret = clReleaseMemObject(a_mem_obj);
-    ret = clReleaseMemObject(b_mem_obj);
-    ret = clReleaseMemObject(c_mem_obj);
-    ret = clReleaseCommandQueue(command_queue);
-    ret = clReleaseContext(context);
-    free(A);
-    free(B);
-    free(C);
+    kernel = clCreateKernel(program, "tank_collision", &ret);
+    //movekernel = clCreateKernel(program, "move_tanks", &ret);
+    ret = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&tankGrid_mem_obj);
+    ret = clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&xtank_mem_obj);
+    ret = clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&ytank_mem_obj);
+    ret = clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&xtankout_mem_obj);
+    ret = clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&ytankout_mem_obj);
 
     ///////
     frame_count_font = new Font("assets/digital_small.png", "ABCDEFGHIJKLMNOPQRSTUVWXYZ:?!=-0123456789.");
-
-    memset(Xgrid, 69420.0f, sizeof(Xgrid));
-    memset(Ygrid, 69420.0f, sizeof(Xgrid));
     tanks.reserve(NUM_TANKS_BLUE + NUM_TANKS_RED);
     blueTanks.reserve(NUM_TANKS_BLUE);
     redTanks.reserve(NUM_TANKS_RED);
@@ -193,15 +175,34 @@ void Game::Init()
     //Spawn blue tanks
     for (int i = 0; i < NUM_TANKS_BLUE; i++)
     {
-        tanks.push_back(Tank(&grid, start_blue_x + ((i % max_rows) * spacing), start_blue_y + ((i / max_rows) * spacing), BLUE, &tank_blue, &smoke, 1200, 600, tank_radius, TANK_MAX_HEALTH, TANK_MAX_SPEED));
+        tanks.push_back(Tank(&grid,i, start_blue_x + ((i % max_rows) * spacing), start_blue_y + ((i / max_rows) * spacing), BLUE, &tank_blue, &smoke, 1200, 600, tank_radius, TANK_MAX_HEALTH, TANK_MAX_SPEED));
     }
     //Spawn red tanks
     for (int i = 0; i < NUM_TANKS_RED; i++)
     {
-        tanks.push_back(Tank(&grid, start_red_x + ((i % max_rows) * spacing), start_red_y + ((i / max_rows) * spacing), RED, &tank_red, &smoke, 80, 80, tank_radius, TANK_MAX_HEALTH, TANK_MAX_SPEED));
+        tanks.push_back(Tank(&grid, i + NUM_TANKS_RED ,start_red_x + ((i % max_rows) * spacing), start_red_y + ((i / max_rows) * spacing), RED, &tank_red, &smoke, 80, 80, tank_radius, TANK_MAX_HEALTH, TANK_MAX_SPEED));
     }
+    int i = 0;
     for (Tank& tank : tanks)
     {
+        float tankxpos = tank.position.x;
+        float tankypos = tank.position.y;
+        int cellX = (int)((tankxpos / sizeOfCell) + gridOffset);
+        int cellY = (int)((tankypos / sizeOfCell) + gridOffset);
+        tank.CellX = cellX;
+        tank.CellY = cellY;
+        int cellpos = (cellY * (numberOfCells * maximumUnitsInCell)) + (cellX * maximumUnitsInCell);
+        for (int i = 0; i < maximumUnitsInCell; i++)
+        {
+            if (tankGrid[cellpos + i] == -1)
+            {
+                tankGrid[cellpos + i] = tank.id;
+                break;
+            }
+        }
+        xTank[i] = tankxpos;
+        yTank[i] = tankypos;
+        i++;
         tank.grid->addTank2Cell(&tank);
         QNode* x = new QNode(tank.position, &tank);
         allTanksQTree->insertNode(&tank);
@@ -217,6 +218,7 @@ void Game::Init()
     particle_beams.push_back(Particle_beam(vec2(SCRWIDTH / 2, SCRHEIGHT / 2), vec2(100, 50), &particle_beam_sprite, PARTICLE_BEAM_HIT_VALUE));
     particle_beams.push_back(Particle_beam(vec2(80, 80), vec2(100, 50), &particle_beam_sprite, PARTICLE_BEAM_HIT_VALUE));
     particle_beams.push_back(Particle_beam(vec2(1200, 600), vec2(100, 50), &particle_beam_sprite, PARTICLE_BEAM_HIT_VALUE));
+    GPGPU();
 }
 
 // -----------------------------------------------------------
@@ -228,6 +230,17 @@ void Game::Shutdown()
 
 Game::~Game()
 {
+    ret = clFlush(command_queue);
+    ret = clFinish(command_queue);
+    ret = clReleaseKernel(kernel);
+    ret = clReleaseProgram(program);
+    ret = clReleaseMemObject(tankGrid_mem_obj);
+    ret = clReleaseMemObject(xtank_mem_obj);
+    ret = clReleaseMemObject(ytank_mem_obj);
+    ret = clReleaseMemObject(xtankout_mem_obj);
+    ret = clReleaseMemObject(ytankout_mem_obj);
+    ret = clReleaseCommandQueue(command_queue);
+    ret = clReleaseContext(context);
     delete frame_count_font;
 }
 
@@ -388,7 +401,7 @@ void BattleSim::Game::UpdateTanks()
         if (tank.active)
         {
             //QuadTreebasedColision
-            GPGPU(&tank);
+            //GPGPU(&tank);
             /*  vector<Tank*> allNodesInRange;
             allNodesInRange = allTanksQTree->FindNodesInRange(tank, allNodesInRange, tank.collision_radius);
             if (allNodesInRange.size() > 0)
@@ -556,15 +569,23 @@ void BattleSim::Game::draw_health_bars(int i, char color, int health)
                 health_bar_end_x, health_bar_end_y, GREENMASK);
 }
 
-void BattleSim::Game::GPGPU(Tank* tank)
+void BattleSim::Game::GPGPU()
 {
-    int cellpos = tank->CellY * maximumUnitsInCell * tank->CellX - maximumUnitsInCell;
-    maximumUnitsInCell;
-    for (int i = 0; i < maximumUnitsInCell; i++)
-    {
-        Xgrid[cellpos] = tank->position.x;
-        Ygrid[cellpos] = tank->position.y;
-    }
+    ret = clEnqueueWriteBuffer(command_queue, tankGrid_mem_obj, CL_TRUE, 0,
+                               gridarrys * sizeof(int), tankGrid, 0, NULL, NULL);
+    ret = clEnqueueWriteBuffer(command_queue, ytank_mem_obj, CL_TRUE, 0,
+                               totalTanks * sizeof(float), yTank, 0, NULL, NULL);
+    ret = clEnqueueWriteBuffer(command_queue, xtank_mem_obj, CL_TRUE, 0,
+                               totalTanks * sizeof(float), xTank, 0, NULL, NULL);
+
+    size_t global_item_size = totalTanks + 14; // Process the entire lists, +2 so it divides by 64
+    size_t local_item_size = 64;               // Divide work items into groups of 64
+    ret = clEnqueueNDRangeKernel(command_queue, kernel, 1, NULL,
+                                 &global_item_size, &local_item_size, 0, NULL, NULL);
+    ret = clEnqueueReadBuffer(command_queue, xtankout_mem_obj, CL_FALSE, 0,
+                              totalTanks * sizeof(float), xTankOut, 0, NULL, NULL);
+    ret = clEnqueueReadBuffer(command_queue, ytankout_mem_obj, CL_FALSE, 0,
+                              totalTanks * sizeof(float), yTankOut, 0, NULL, NULL);
 }
 
 // -----------------------------------------------------------

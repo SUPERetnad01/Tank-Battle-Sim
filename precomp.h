@@ -35,7 +35,7 @@
 // External dependencies:
 #include <FreeImage.h>
 #include <tbb/tbb.h>
-
+#include <CL/cl.h>
 #pragma warning(push)
 #pragma warning(disable : 26812)
 #include <SDL.h>

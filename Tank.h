@@ -13,7 +13,7 @@ class Tank
 {
     friend class Grid;
   public:
-    Tank(Grid *grid ,float pos_x, float pos_y, allignments allignment, Sprite* tank_sprite, Sprite* smoke_sprite, float tar_x, float tar_y, float collision_radius, int health, float max_speed);
+    Tank(Grid *grid ,int id,float pos_x, float pos_y, allignments allignment, Sprite* tank_sprite, Sprite* smoke_sprite, float tar_x, float tar_y, float collision_radius, int health, float max_speed);
 
     ~Tank();
 
@@ -48,13 +48,14 @@ class Tank
 
     bool reloaded;
     bool active;
-
+    
     allignments allignment;
 
     int CellX;
     int CellY;
-
+    int id;
     int current_frame;
+
     Sprite* tank_sprite;
     Sprite* smoke_sprite;
     Grid* grid;

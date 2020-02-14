@@ -59,54 +59,58 @@ void BattleSim::Grid::moveTank2NewCell(Tank* tank, vec2 oldposition)
 }
 
 void BattleSim::Grid::handleTankCell(int x, int y, Tank* tank)
-{                                                    //     1 | 2 | 3
-    vector<Tank*> currentTankCell = tankcells[x][y]; //     4 | 5 | 6
-    if (tank != nullptr)                             //     7 | 8 | 9
+{
+    const vector<Tank*> currentTankCell = tankcells[x][y];
+    if (tank != nullptr)
     {
         if (currentTankCell.size() != 0)
-        {
-            handleTank(tank, currentTankCell);
-        }
-        if (x < numberOfCells - 1)
-        {
-            handleTank(tank, tankcells[x + 1][y]);
-        }
-        if (x > 0) // 4
-        {
-            handleTank(tank, tankcells[x - 1][y]);
-        }
+        {}
+        handleTank(tank, currentTankCell);
 
-        if (x > 0 && y > 0)
-        {
-            handleTank(tank, tankcells[x - 1][y - 1]);
-        } // 7
+        //if (x < numberOfCells - 1)
+        //{
+        //    handleTank(tank, tankcells[x + 1][y]);
+        //}
+        //if (x > 0) // 4
+        //{
+        //    handleTank(tank, tankcells[x - 1][y]);
+        //}
 
-        if (y > 0)
-        {
-            handleTank(tank, tankcells[x][y - 1]);
-        } // 8
+        //if (x > 0 && y > 0)
+        //{
+        //    handleTank(tank, tankcells[x - 1][y - 1]);
+        //} // 7
 
-        if (x < numberOfCells - 1 && y > 0)
-        {
-            handleTank(tank, tankcells[x + 1][y - 1]); //9
-        }
-        if (x < numberOfCells - 1 && y < numberOfCells - 1)
-        {
-            handleTank(tank, tankcells[x + 1][y + 1]); // 3
-        }
-        if (x > 0 && y < numberOfCells - 1)
-        {
-            handleTank(tank, tankcells[x - 1][y + 1]); // 1
-        }
-        if (y < numberOfCells - 1)
-        {
-            handleTank(tank, tankcells[x][y + 1]); // 2
-        }
+        //if (y > 0)
+        //{
+        //    handleTank(tank, tankcells[x][y - 1]);
+        //} // 8
+
+        //if (x < numberOfCells - 1 && y > 0)
+        //{
+        //    handleTank(tank, tankcells[x + 1][y - 1]); //9
+        //}
+        //if (x < numberOfCells - 1 && y < numberOfCells - 1)
+        //{
+        //    handleTank(tank, tankcells[x + 1][y + 1]); // 3
+        //}
+        //if (x > 0 && y < numberOfCells - 1)
+        //{
+        //    handleTank(tank, tankcells[x - 1][y + 1]); // 1
+        //}
+        //if (y < numberOfCells - 1)
+        //{
+        //    handleTank(tank, tankcells[x][y + 1]); // 2
+        //}
     }
 }
 
 void BattleSim::Grid::handleTank(Tank* tank, vector<Tank*> othertanks)
 {
+    if (othertanks.size() == 0)
+    {
+        return;
+    }
     for (auto othertank : othertanks)
     {
         if (tank != othertank && othertank != nullptr)
@@ -120,6 +124,7 @@ void BattleSim::Grid::collision(Tank* tank, Tank* other)
 {
     vec2 dir = tank->Get_Position() - other->Get_Position();
     float dirSquaredLen = dir.sqrLength();
+    printf("dirSquard Len %f Dir.x %f Dir.y %f tankposx %f tankposy %f othertankx %f othertanky %f tankid : %d \n", dirSquaredLen, dir.x, dir.y, tank->position.x, tank->position.y, other->position.x, other->position.y, tank->id);
     float colSquaredLen = (tank->Get_collision_radius() * tank->Get_collision_radius()) +
                           (other->Get_collision_radius() * other->Get_collision_radius());
     if (dirSquaredLen < colSquaredLen)

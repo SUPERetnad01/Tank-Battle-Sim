@@ -7,6 +7,7 @@ namespace BattleSim
 mutex grid_mutex;
 
 Tank::Tank(Grid* grid_,
+           int _id,
            float pos_x,
            float pos_y,
            allignments allignment,
@@ -19,6 +20,7 @@ Tank::Tank(Grid* grid_,
            float max_speed)
     : CellX(NULL),
       CellY(NULL),
+      id(_id),
       grid(grid_),
       position(pos_x, pos_y),
       allignment(allignment),
@@ -47,6 +49,7 @@ Tank::Tank(Grid* grid_,
 
         //Update using accumulated force
         speed = direction + force;
+        //printf("CPU forcex %f forcey %f tank id %d \n", force.x, force.y,id);
         position += speed * max_speed * 0.5f;
 
         //Update reload time

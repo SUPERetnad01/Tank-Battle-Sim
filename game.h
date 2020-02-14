@@ -35,7 +35,7 @@ class Game
     void draw_blue_health();
     void draw_red_health();
     void draw_health_bars(int i, char color, int health);
-    void GPGPU(Tank*);
+    void GPGPU();
     Tank& FindClosestEnemy(Tank& current_tank);
 
     void MouseUp(int button)
@@ -59,6 +59,19 @@ class Game
     }
 
   private:
+    cl_int ret;
+    cl_command_queue command_queue;
+    cl_context context;
+    cl_kernel kernel;
+    cl_kernel movekernel;
+    cl_program program;
+    cl_mem tankGrid_mem_obj;
+    cl_mem ygrid_mem_obj;
+    cl_mem xtank_mem_obj;
+    cl_mem ytank_mem_obj;
+    cl_mem xtankout_mem_obj;
+    cl_mem ytankout_mem_obj;
+
     Surface* screen;
     vec2 topright = (SCRWIDTH, SCRHEIGHT);
     vector<Tank> tanks;
@@ -70,13 +83,17 @@ class Game
     vector<Tank*> redTanks;
     Font* frame_count_font;
 
-    float* GridCellY[1000];
+    static const int totalTanks = 50;
     static const int numberOfCells = 250;
-    static const int maximumUnitsInCell = 40;
+    static const int maximumUnitsInCell = 10;
     static const int demensions = 2;
-    int gridarrys = numberOfCells * numberOfCells * maximumUnitsInCell * demensions;
-    float Xgrid[numberOfCells * numberOfCells * maximumUnitsInCell * demensions];
-    float Ygrid[numberOfCells * numberOfCells * maximumUnitsInCell * demensions];
+    int gridarrys = numberOfCells * numberOfCells * maximumUnitsInCell;
+    int tankGrid[numberOfCells * numberOfCells * maximumUnitsInCell];
+    float xTank[totalTanks];
+    float yTank[totalTanks];
+    float xTankOut[totalTanks];
+    float yTankOut[totalTanks];
+    char tankcolour[totalTanks];
     long long frame_count = 0;
     Grid grid;
     static const int sizeOfCell = 26;
