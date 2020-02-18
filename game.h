@@ -15,9 +15,6 @@ class Game
 {
 
   public:
-    float* posistionX = (float*)malloc(sizeof(float));
-    float* posistionY = (float*)malloc(sizeof(float));
-    typedef struct tankposistion tankposistions[50];
     ~Game();
     void SetTarget(Surface* surface) { screen = surface; }
     void Init();
@@ -35,7 +32,7 @@ class Game
     void draw_blue_health();
     void draw_red_health();
     void draw_health_bars(int i, char color, int health);
-    Tank& FindClosestEnemy(Tank& current_tank);
+    const Tank& find_closest_enemy(Tank& current_tank);
 
     void MouseUp(int button)
     { /* implement if you want to detect mouse button presses */

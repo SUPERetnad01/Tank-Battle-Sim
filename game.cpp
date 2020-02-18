@@ -54,12 +54,11 @@ const static vec2 rocket_size(25, 24);
 
 vector<int> red_health_bars = {};
 vector<int> blue_health_bars = {};
-vec2 nullpoint = {0, -2000};
-vec2 Maxborder = {SCRWIDTH, SCRHEIGHT};
-QuadTree* redTanksQTree = new QuadTree(Maxborder, nullpoint);
-;
-QuadTree* blueTanksQTree = new QuadTree(Maxborder, nullpoint);
-QuadTree* allTanksQTree = new QuadTree(Maxborder, nullpoint);
+vec2 bottom_right_border = {0, -2000};
+vec2 top_left_border = {SCRWIDTH, SCRHEIGHT};
+QuadTree* redTanksQTree = new QuadTree(top_left_border, bottom_right_border);
+QuadTree* blueTanksQTree = new QuadTree(top_left_border, bottom_right_border);
+QuadTree* allTanksQTree = new QuadTree(top_left_border, bottom_right_border);
 
 const static float tank_radius = 12.f;
 const static float rocket_radius = 10.f;
@@ -76,26 +75,26 @@ void Game::Init()
     blueTanks.reserve(NUM_TANKS_BLUE);
     redTanks.reserve(NUM_TANKS_RED);
 
-    uint rows = (uint)sqrt(NUM_TANKS_BLUE + NUM_TANKS_RED);
-    uint max_rows = 12;
+    uint rows = sqrt(NUM_TANKS_BLUE + NUM_TANKS_RED);
+    const uint max_rows = 12;
 
-    float start_blue_x = tank_size.x + 10.0f;
-    float start_blue_y = tank_size.y + 80.0f;
+    const float start_blue_x = tank_size.x + 10.0f;
+    const float start_blue_y = tank_size.y + 80.0f;
 
-    float start_red_x = 980.0f;
-    float start_red_y = 100.0f;
+    const float start_red_x = 980.0f;
+    const float start_red_y = 100.0f;
 
-    float spacing = 15.0f;
+    const float spacing = 15.0f;
 
     //Spawn blue tanks
     for (int i = 0; i < NUM_TANKS_BLUE; i++)
     {
-        tanks.push_back(Tank(&grid, start_blue_x + ((i % max_rows) * spacing), start_blue_y + ((i / max_rows) * spacing), BLUE, &tank_blue, &smoke, 1200, 600, tank_radius, TANK_MAX_HEALTH, TANK_MAX_SPEED));
+        tanks.emplace_back(Tank(&grid, start_blue_x + ((i % max_rows) * spacing), start_blue_y + ((i / max_rows) * spacing), BLUE, &tank_blue, &smoke, 1200, 600, tank_radius, TANK_MAX_HEALTH, TANK_MAX_SPEED));
     }
     //Spawn red tanks
     for (int i = 0; i < NUM_TANKS_RED; i++)
     {
-        tanks.push_back(Tank(&grid, start_red_x + ((i % max_rows) * spacing), start_red_y + ((i / max_rows) * spacing), RED, &tank_red, &smoke, 80, 80, tank_radius, TANK_MAX_HEALTH, TANK_MAX_SPEED));
+        tanks.emplace_back(Tank(&grid, start_red_x + ((i % max_rows) * spacing), start_red_y + ((i / max_rows) * spacing), RED, &tank_red, &smoke, 80, 80, tank_radius, TANK_MAX_HEALTH, TANK_MAX_SPEED));
     }
     for (Tank& tank : tanks)
     {
@@ -110,9 +109,9 @@ void Game::Init()
             blueTanks.emplace_back(&tank);
         }
     }
-    particle_beams.push_back(Particle_beam(vec2(SCRWIDTH / 2, SCRHEIGHT / 2), vec2(100, 50), &particle_beam_sprite, PARTICLE_BEAM_HIT_VALUE));
-    particle_beams.push_back(Particle_beam(vec2(80, 80), vec2(100, 50), &particle_beam_sprite, PARTICLE_BEAM_HIT_VALUE));
-    particle_beams.push_back(Particle_beam(vec2(1200, 600), vec2(100, 50), &particle_beam_sprite, PARTICLE_BEAM_HIT_VALUE));
+    particle_beams.emplace_back(Particle_beam(vec2(SCRWIDTH / 2, SCRHEIGHT / 2), vec2(100, 50), &particle_beam_sprite, PARTICLE_BEAM_HIT_VALUE));
+    particle_beams.emplace_back(Particle_beam(vec2(80, 80), vec2(100, 50), &particle_beam_sprite, PARTICLE_BEAM_HIT_VALUE));
+    particle_beams.emplace_back(Particle_beam(vec2(1200, 600), vec2(100, 50), &particle_beam_sprite, PARTICLE_BEAM_HIT_VALUE));
 }
 
 // -----------------------------------------------------------
@@ -130,11 +129,11 @@ Game::~Game()
 // -----------------------------------------------------------
 // Iterates through all tanks and returns the closest enemy tank for the given tank
 // -----------------------------------------------------------
-Tank& Game::FindClosestEnemy(Tank& current_tank)
+const Tank& Game::find_closest_enemy(Tank& current_tank)
 {
     auto result = allTanksQTree->FindClosest(current_tank, nullptr, numeric_limits<float>::infinity());
-    auto closesttank = get<0>(result);
-    return *closesttank;
+    const auto closest_tank = get<0>(result);
+    return *closest_tank;
 }
 
 // -----------------------------------------------------------
@@ -288,7 +287,7 @@ void BattleSim::Game::UpdateTanks()
     {
         if (tank.active)
         {
-            //QuadTreebasedColision
+            //QuadTree based Collision
             /*  vector<Tank*> allNodesInRange;
             allNodesInRange = allTanksQTree->FindNodesInRange(tank, allNodesInRange, tank.collision_radius);
             if (allNodesInRange.size() > 0)
@@ -305,8 +304,8 @@ void BattleSim::Game::UpdateTanks()
             allTanksQTree->insertNode(&tank);
             if (tank.Rocket_Reloaded())
             {
-                Tank& target = FindClosestEnemy(tank);
-                rockets.push_back(
+                const Tank& target = find_closest_enemy(tank);
+                rockets.emplace_back(
                     Rocket(&grid, tank.position, (target.Get_Position() - tank.position).normalized() * 3, rocket_radius,
                            tank.allignment, ((tank.allignment == RED) ? &rocket_red : &rocket_blue)));
                 tank.Reload_Rocket();
@@ -446,10 +445,10 @@ void BattleSim::Game::draw_red_health()
 
 void BattleSim::Game::draw_health_bars(int i, char color, int health)
 {
-    int health_bar_start_x = i * (HEALTH_BAR_WIDTH + HEALTH_BAR_SPACING) + HEALTH_BARS_OFFSET_X;
-    int health_bar_start_y = (color == 'b') ? 0 : (SCRHEIGHT - HEALTH_BAR_HEIGHT) - 1;
-    int health_bar_end_x = health_bar_start_x + HEALTH_BAR_WIDTH;
-    int health_bar_end_y = (color == 'b') ? HEALTH_BAR_HEIGHT : SCRHEIGHT - 1;
+   const int health_bar_start_x = i * (HEALTH_BAR_WIDTH + HEALTH_BAR_SPACING) + HEALTH_BARS_OFFSET_X;
+   const int health_bar_start_y = (color == 'b') ? 0 : (SCRHEIGHT - HEALTH_BAR_HEIGHT) - 1;
+   const int health_bar_end_x = health_bar_start_x + HEALTH_BAR_WIDTH;
+   const int health_bar_end_y = (color == 'b') ? HEALTH_BAR_HEIGHT : SCRHEIGHT - 1;
 
     screen->Bar(health_bar_start_x, health_bar_start_y, health_bar_end_x, health_bar_end_y, REDMASK);
     screen->Bar(health_bar_start_x, health_bar_start_y + (int)((double)HEALTH_BAR_HEIGHT * (1 - ((double)health / (double)TANK_MAX_HEALTH))),
@@ -471,6 +470,6 @@ void Game::Tick(float deltaTime)
 
     //Print frame count
     frame_count++;
-    string frame_count_string = "FRAME: " + std::to_string(frame_count);
+    const string frame_count_string = "FRAME: " + std::to_string(frame_count);
     frame_count_font->Print(screen, frame_count_string.c_str(), 350, 580);
 }
