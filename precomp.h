@@ -82,7 +82,7 @@ using namespace BattleSim;
 
 #include "ThreadPool.h"
 
-#include "tank.h"
+#include "Tank.h"
 #include "rocket.h"
 #include "smoke.h"
 #include "explosion.h"

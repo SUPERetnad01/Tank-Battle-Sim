@@ -1,27 +1,12 @@
 #pragma once
 namespace BattleSim
 {
-class QNode
-{
-  private:
-  public:
-    QNode(vec2 _pos, Tank* _tank)
-    {
-        tank = _tank;
-        pos = _pos;
-    }
-    QNode()
-    {
-        tank = nullptr;
-    }
-    vec2 pos = (0, 0);
-    Tank* tank = nullptr;
-};
 class QuadTree
 {
     int capacity = 4;
     int count;
     vector<Tank*> points;
+    vector<QuadTree*> quad_tree_quadrants;
     QuadTree* NETree;
     QuadTree* NWTree;
     QuadTree* SETree;
@@ -42,7 +27,7 @@ class QuadTree
         SETree = nullptr;
         SWTree = nullptr;
     }
-    QuadTree(vec2 topL, vec2 botR, QuadTree* parrent = nullptr)
+    QuadTree(vec2 topL, vec2 botR)
     {
 
         count = 0;
