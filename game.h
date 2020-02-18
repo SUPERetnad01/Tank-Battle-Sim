@@ -28,7 +28,7 @@ class Game
     void MeasurePerformance();
     void UpdateTanks();
     void UpdateRockets();
-    void update_partical_beams();
+    void update_particle_beams();
     std::vector<LinkedList> bucket_sort(std::vector<Tank*>& unsortedTanks, int numberofbuckets);
     std::vector<int> counting_sort(const vector<Tank*>& in);
     void sort_health_bars();

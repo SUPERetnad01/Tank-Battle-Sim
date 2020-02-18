@@ -165,7 +165,7 @@ void Game::Update(float deltaTime)
     rockets.erase(std::remove_if(rockets.begin(), rockets.end(), [](const Rocket& rocket) { return !rocket.active; }), rockets.end());
 
     //Update particle beams
-    update_partical_beams();
+    update_particle_beams();
 
     //Update explosion sprites and remove when done with remove erase idiom
     //for (Explosion& _explosion : explosions)
@@ -195,6 +195,7 @@ void Game::Draw()
     tbb::parallel_for(tbb::blocked_range<int>(0, NUM_TANKS_BLUE + NUM_TANKS_RED), [&](tbb::blocked_range<int> r) {
         for (int i = r.begin(); i < r.end(); ++i)
         {
+            scoped_lock(mtx);
             tanks.at(i).Draw(screen);
 
             vec2 tPos = tanks.at(i).Get_Position();
@@ -210,6 +211,7 @@ void Game::Draw()
     tbb::parallel_for(tbb::blocked_range<int>(0, rockets.size()), [&](tbb::blocked_range<int> r) {
         for (int i = r.begin(); i < r.end(); ++i)
         {
+            scoped_lock(mtx);
             rockets[i].Draw(screen);
         }
     });
@@ -219,6 +221,7 @@ void Game::Draw()
     tbb::parallel_for(tbb::blocked_range<int>(0, smokes.size()), [&](tbb::blocked_range<int> r) {
         for (int i = r.begin(); i < r.end(); ++i)
         {
+            scoped_lock(mtx);
             smokes[i].Draw(screen);
         }
     });
@@ -228,6 +231,7 @@ void Game::Draw()
     tbb::parallel_for(tbb::blocked_range<int>(0, particle_beams.size()), [&](tbb::blocked_range<int> r) {
         for (int i = r.begin(); i < r.end(); ++i)
         {
+            scoped_lock(mtx);
             particle_beams[i].Draw(screen);
         }
     });
@@ -237,6 +241,7 @@ void Game::Draw()
     tbb::parallel_for(tbb::blocked_range<int>(0, explosions.size()), [&](tbb::blocked_range<int> r) {
         for (int i = r.begin(); i < r.end(); ++i)
         {
+            scoped_lock(mtx);
             explosions[i].Draw(screen);
         }
     });
@@ -319,10 +324,10 @@ void BattleSim::Game::UpdateRockets()
         if (rocket.hitTarget)
         {
             Tank* tank = rocket.hitTank;
-            explosions.push_back(Explosion(&explosion, tank->position));
+            explosions.emplace_back(Explosion(&explosion, tank->position));
             if (tank->hit(ROCKET_HIT_VALUE))
             {
-                smokes.push_back(Smoke(smoke, tank->position - vec2(0, 48)));
+                smokes.emplace_back(Smoke(smoke, tank->position - vec2(0, 48)));
             }
             rocket.active = false;
         }
@@ -331,7 +336,7 @@ void BattleSim::Game::UpdateRockets()
     }
 }
 
-void BattleSim::Game::update_partical_beams()
+void BattleSim::Game::update_particle_beams()
 {
     tbb::parallel_for(tbb::blocked_range<int>(0, particle_beams.size()), [&](tbb::blocked_range<int> r) {
         for (int i = r.begin(); i < r.end(); ++i)
@@ -348,7 +353,7 @@ void BattleSim::Game::update_partical_beams()
                 {
                     if (tank.hit(particle_beam.damage))
                     {
-                        smokes.push_back(Smoke(smoke, tank.position - vec2(0, 48)));
+                        smokes.emplace_back(Smoke(smoke, tank.position - vec2(0, 48)));
                     }
                 }
             }
