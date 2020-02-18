@@ -35,7 +35,6 @@ class Game
     void draw_blue_health();
     void draw_red_health();
     void draw_health_bars(int i, char color, int health);
-    void GPGPU(Tank*);
     Tank& FindClosestEnemy(Tank& current_tank);
 
     void MouseUp(int button)
@@ -70,13 +69,6 @@ class Game
     vector<Tank*> redTanks;
     Font* frame_count_font;
 
-    float* GridCellY[1000];
-    static const int numberOfCells = 250;
-    static const int maximumUnitsInCell = 40;
-    static const int demensions = 2;
-    int gridarrys = numberOfCells * numberOfCells * maximumUnitsInCell * demensions;
-    float Xgrid[numberOfCells * numberOfCells * maximumUnitsInCell * demensions];
-    float Ygrid[numberOfCells * numberOfCells * maximumUnitsInCell * demensions];
     long long frame_count = 0;
     Grid grid;
     static const int sizeOfCell = 26;

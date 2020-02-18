@@ -29,7 +29,6 @@ class QuadTree
     }
     QuadTree(vec2 topL, vec2 botR)
     {
-
         count = 0;
         NETree = nullptr;
         NWTree = nullptr;
