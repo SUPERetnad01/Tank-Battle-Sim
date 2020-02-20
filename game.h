@@ -36,6 +36,7 @@ class Game
     void draw_red_health();
     void draw_health_bars(int i, char color, int health);
     void GPGPU();
+    void update_grid(Tank,int,int);
     Tank& FindClosestEnemy(Tank& current_tank);
 
     void MouseUp(int button)

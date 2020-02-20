@@ -443,59 +443,10 @@ void BattleSim::Game::UpdateTanks()
             tank.CellY = (int)((tank.position.y / Grid::sizeOfCell) + gridOffset);
             xTank[tank.id] = tank.position.x;
             yTank[tank.id] = tank.position.y;
-            bool inserted = false;
+           
             if (tank.CellX != old_Cell_X || tank.CellY != old_Cell_Y)
             {
-                const int old_Cell_Pos = (old_Cell_Y * (numberOfCells * maximumUnitsInCell)) + (old_Cell_X * maximumUnitsInCell);
-                const int cell_pos = (tank.CellY * (numberOfCells * maximumUnitsInCell)) + (tank.CellX * maximumUnitsInCell);
-                //for (int i = 0; i < maximumUnitsInCell; i++)
-                //{
-                //    printf("before moving : old_Cell_Pos %d cell_pos %d \n", tankGrid[old_Cell_Pos + i], tankGrid[cell_pos + i]);
-
-                //}
-                if (tankGrid[old_Cell_Pos + maximumUnitsInCell -1] !=-1)
-                {
-                    printf("%d \n", tankGrid[old_Cell_Pos + maximumUnitsInCell]);
-                    for (int i = 0; i < maximumUnitsInCell; i++)
-                    {
-                        printf("%d \n", tankGrid[old_Cell_Pos + i]);
-                    }
-                    int x = 0;
-                }
-                for (int i = 0; i < maximumUnitsInCell; i++)
-                {
-                    
-                        if (tankGrid[old_Cell_Pos + i] == tank.id)
-                        {
-                            tankGrid[old_Cell_Pos + i] = -69;
-                            for (int j = 0; j < maximumUnitsInCell - i; j++)
-                            {
-                                if (tankGrid[old_Cell_Pos + i + j] == -69)
-                                {
-                                    if (tankGrid[old_Cell_Pos + i + j + 1] == -1)
-                                    {
-                                        tankGrid[old_Cell_Pos + i + j] = -1;
-                                        break;
-                                    }
-                                    else
-                                    {
-                                        tankGrid[old_Cell_Pos + i + j] = tankGrid[old_Cell_Pos + i + j + 1];
-                                        tankGrid[old_Cell_Pos + i + j + 1] = -69;
-                                    }
-                                }
-                            }
-                        }
-                    if (tankGrid[cell_pos + i] == -1 && !inserted)
-                    {
-                        tankGrid[cell_pos + i] = tank.id;
-                        inserted = true;
-                    }
-                }
-                /*for (int i = 0; i < maximumUnitsInCell; i++)
-                {
-                    printf("after moving: old_Cell_Pos %d cell_pos %d \n", tankGrid[old_Cell_Pos+i],tankGrid[cell_pos+i]);
-                }*/
-                int x = 0;
+                update_grid(tank, old_Cell_X, old_Cell_Y);
             }
             allTanksQTree->insertNode(&tank);
             if (tank.Rocket_Reloaded())
@@ -506,6 +457,59 @@ void BattleSim::Game::UpdateTanks()
                            tank.allignment, ((tank.allignment == RED) ? &rocket_red : &rocket_blue)));
                 tank.Reload_Rocket();
             }
+        }
+    }
+}
+void Game::update_grid(Tank  tank , int old_Cell_X,int old_Cell_Y)
+{
+    bool inserted = false;
+    const int old_Cell_Pos = (old_Cell_Y * (numberOfCells * maximumUnitsInCell)) + (old_Cell_X * maximumUnitsInCell);
+    const int cell_pos = (tank.CellY * (numberOfCells * maximumUnitsInCell)) + (tank.CellX * maximumUnitsInCell);
+    //for (int i = 0; i < maximumUnitsInCell; i++)
+    //{
+    //    printf("before moving : old_Cell_Pos %d cell_pos %d \n", tankGrid[old_Cell_Pos + i], tankGrid[cell_pos + i]);
+
+    //}
+    if (tankGrid[old_Cell_Pos + maximumUnitsInCell - 1] != -1)
+    {
+        printf("%d \n", tankGrid[old_Cell_Pos + maximumUnitsInCell]);
+        for (int i = 0; i < maximumUnitsInCell; i++)
+        {
+            printf("%d \n", tankGrid[old_Cell_Pos + i]);
+        }
+        int x = 0;
+    }
+    for (int i = 0; i < maximumUnitsInCell; i++)
+    {
+
+        if (tankGrid[old_Cell_Pos + i] == tank.id)
+        {
+            tankGrid[old_Cell_Pos + i] = -69;
+            for (int j = 0; j < maximumUnitsInCell - i; j++)
+            {
+                if (tankGrid[old_Cell_Pos + i + j] == -69)
+                {
+                    if (tankGrid[old_Cell_Pos + i + j + 1] == -1)
+                    {
+                        tankGrid[old_Cell_Pos + i + j] = -1;
+                        break;
+                    }
+                    else
+                    {
+                        tankGrid[old_Cell_Pos + i + j] = tankGrid[old_Cell_Pos + i + j + 1];
+                        tankGrid[old_Cell_Pos + i + j + 1] = -69;
+                    }
+                }
+            }
+        }
+        /*for (int i = 0; i < maximumUnitsInCell; i++)
+                {
+                    printf("after moving: old_Cell_Pos %d cell_pos %d \n", tankGrid[old_Cell_Pos+i],tankGrid[cell_pos+i]);
+                }*/
+        if (tankGrid[cell_pos + i] == -1 && !inserted)
+        {
+            tankGrid[cell_pos + i] = tank.id;
+            inserted = true;
         }
     }
 }
@@ -669,6 +673,8 @@ void BattleSim::Game::GPGPU()
     ret = clEnqueueReadBuffer(command_queue, tank_force_y_mem_obj, CL_FALSE, 0,
                               totalTanks * sizeof(float), yForce, 0, NULL, NULL);
 }
+
+
 
 // -----------------------------------------------------------
 // Main application tick function
