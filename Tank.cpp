@@ -36,14 +36,10 @@ Tank::Tank(Grid* grid_,
       smoke_sprite(smoke_sprite){
     }
 
-    Tank::~Tank()
-    {
-    }
-
     void Tank::Tick()
     {
-        vec2 oldposition = position;
-        vec2 direction = (target - position).normalized();
+        const  vec2 oldposition = position;
+        const vec2 direction = (target - position).normalized();
 
         //Update using accumulated force
         speed = direction + force;
@@ -93,7 +89,7 @@ Tank::Tank(Grid* grid_,
     //Draw the sprite with the facing based on this tanks movement direction
     void Tank::Draw(Surface * screen)
     {
-        vec2 direction = (target - position).normalized();
+        const vec2 direction = (target - position).normalized();
         tank_sprite->SetFrame(((abs(direction.x) > abs(direction.y)) ? ((direction.x < 0) ? 3 : 0) : ((direction.y < 0) ? 9 : 6)) + (current_frame / 3));
         tank_sprite->Draw(screen, (int)position.x - 14, (int)position.y - 18);
     }

@@ -54,12 +54,11 @@ const static vec2 rocket_size(25, 24);
 
 vector<int> red_health_bars = {};
 vector<int> blue_health_bars = {};
-vec2 nullpoint = {0, -2000};
-vec2 Maxborder = {SCRWIDTH, SCRHEIGHT};
-QuadTree* redTanksQTree = new QuadTree(Maxborder, nullpoint);
-;
-QuadTree* blueTanksQTree = new QuadTree(Maxborder, nullpoint);
-QuadTree* allTanksQTree = new QuadTree(Maxborder, nullpoint);
+vec2 bottom_right_border = {0, -2000};
+vec2 top_left_border = {SCRWIDTH, SCRHEIGHT};
+QuadTree* redTanksQTree = new QuadTree(top_left_border, bottom_right_border);
+QuadTree* blueTanksQTree = new QuadTree(top_left_border, bottom_right_border);
+QuadTree* allTanksQTree = new QuadTree(top_left_border, bottom_right_border);
 
 const static float tank_radius = 12.f;
 const static float rocket_radius = 10.f;
@@ -70,140 +69,36 @@ mutex mtx;
 // Initialize the application
 void Game::Init()
 {
-    ////////
-    // Create the two input vectors
-    int i;
-    const int LIST_SIZE = 1024;
-    int* A = (int*)malloc(sizeof(int) * LIST_SIZE);
-    int* B = (int*)malloc(sizeof(int) * LIST_SIZE);
-    for (i = 0; i < LIST_SIZE; i++)
-    {
-        A[i] = i;
-        B[i] = LIST_SIZE - i;
-    }
-
-    // Load the kernel source code into the array source_str
-    FILE* fp;
-    char* source_str;
-    size_t source_size;
-
-    fp = fopen("kernel.cl", "r");
-    if (!fp)
-    {
-        fprintf(stderr, "Failed to load kernel.\n");
-        exit(1);
-    }
-    source_str = (char*)malloc(MAX_SOURCE_SIZE);
-    source_size = fread(source_str, 1, MAX_SOURCE_SIZE, fp);
-    fclose(fp);
-
-    // Get platform and device information
-    cl_platform_id platform_id = NULL;
-    cl_device_id device_id = NULL;
-    cl_uint ret_num_devices;
-    cl_uint ret_num_platforms;
-    cl_int ret = clGetPlatformIDs(1, &platform_id, &ret_num_platforms);
-    ret = clGetDeviceIDs(platform_id, CL_DEVICE_TYPE_DEFAULT, 1,
-                         &device_id, &ret_num_devices);
-
-    // Create an OpenCL context
-    cl_context context = clCreateContext(NULL, 1, &device_id, NULL, NULL, &ret);
-
-    // Create a command queue
-    cl_command_queue command_queue = clCreateCommandQueue(context, device_id, 0, &ret);
-
-    // Create memory buffers on the device for each vector
-    cl_mem a_mem_obj = clCreateBuffer(context, CL_MEM_READ_ONLY,
-                                      LIST_SIZE * sizeof(int), NULL, &ret);
-    cl_mem b_mem_obj = clCreateBuffer(context, CL_MEM_READ_ONLY,
-                                      LIST_SIZE * sizeof(int), NULL, &ret);
-    cl_mem c_mem_obj = clCreateBuffer(context, CL_MEM_WRITE_ONLY,
-                                      LIST_SIZE * sizeof(int), NULL, &ret);
-
-    // Copy the lists A and B to their respective memory buffers
-    ret = clEnqueueWriteBuffer(command_queue, a_mem_obj, CL_TRUE, 0,
-                               LIST_SIZE * sizeof(int), A, 0, NULL, NULL);
-    ret = clEnqueueWriteBuffer(command_queue, b_mem_obj, CL_TRUE, 0,
-                               LIST_SIZE * sizeof(int), B, 0, NULL, NULL);
-
-    // Create a program from the kernel source
-    cl_program program = clCreateProgramWithSource(context, 1,
-                                                   (const char**)&source_str, (const size_t*)&source_size, &ret);
-
-    // Build the program
-    ret = clBuildProgram(program, 1, &device_id, NULL, NULL, NULL);
-
-    // Create the OpenCL kernel
-    cl_kernel kernel = clCreateKernel(program, "vector_add", &ret);
-
-    // Set the arguments of the kernel
-    ret = clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&a_mem_obj);
-    ret = clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&b_mem_obj);
-    ret = clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&c_mem_obj);
-
-    // Execute the OpenCL kernel on the list
-    size_t global_item_size = LIST_SIZE; // Process the entire lists
-    size_t local_item_size = 64;         // Divide work items into groups of 64
-    ret = clEnqueueNDRangeKernel(command_queue, kernel, 1, NULL,
-                                 &global_item_size, &local_item_size, 0, NULL, NULL);
-
-    // Read the memory buffer C on the device to the local variable C
-    int* C = (int*)malloc(sizeof(int) * LIST_SIZE);
-    ret = clEnqueueReadBuffer(command_queue, c_mem_obj, CL_TRUE, 0,
-                              LIST_SIZE * sizeof(int), C, 0, NULL, NULL);
-
-    // Display the result to the screen
-    for (i = 0; i < LIST_SIZE; i++)
-        // printf("%d + %d = %d\n", A[i], B[i], C[i]);
-
-        // Clean up
-        ret = clFlush(command_queue);
-    ret = clFinish(command_queue);
-    ret = clReleaseKernel(kernel);
-    ret = clReleaseProgram(program);
-    ret = clReleaseMemObject(a_mem_obj);
-    ret = clReleaseMemObject(b_mem_obj);
-    ret = clReleaseMemObject(c_mem_obj);
-    ret = clReleaseCommandQueue(command_queue);
-    ret = clReleaseContext(context);
-    free(A);
-    free(B);
-    free(C);
-
-    ///////
     frame_count_font = new Font("assets/digital_small.png", "ABCDEFGHIJKLMNOPQRSTUVWXYZ:?!=-0123456789.");
 
-    memset(Xgrid, 69420.0f, sizeof(Xgrid));
-    memset(Ygrid, 69420.0f, sizeof(Xgrid));
     tanks.reserve(NUM_TANKS_BLUE + NUM_TANKS_RED);
     blueTanks.reserve(NUM_TANKS_BLUE);
     redTanks.reserve(NUM_TANKS_RED);
 
-    uint rows = (uint)sqrt(NUM_TANKS_BLUE + NUM_TANKS_RED);
-    uint max_rows = 12;
+    uint rows = sqrt(NUM_TANKS_BLUE + NUM_TANKS_RED);
+    const uint max_rows = 12;
 
-    float start_blue_x = tank_size.x + 10.0f;
-    float start_blue_y = tank_size.y + 80.0f;
+    const float start_blue_x = tank_size.x + 10.0f;
+    const float start_blue_y = tank_size.y + 80.0f;
 
-    float start_red_x = 980.0f;
-    float start_red_y = 100.0f;
+    const float start_red_x = 980.0f;
+    const float start_red_y = 100.0f;
 
-    float spacing = 15.0f;
+    const float spacing = 15.0f;
 
     //Spawn blue tanks
     for (int i = 0; i < NUM_TANKS_BLUE; i++)
     {
-        tanks.push_back(Tank(&grid, start_blue_x + ((i % max_rows) * spacing), start_blue_y + ((i / max_rows) * spacing), BLUE, &tank_blue, &smoke, 1200, 600, tank_radius, TANK_MAX_HEALTH, TANK_MAX_SPEED));
+        tanks.emplace_back(Tank(&grid, start_blue_x + ((i % max_rows) * spacing), start_blue_y + ((i / max_rows) * spacing), BLUE, &tank_blue, &smoke, 1200, 600, tank_radius, TANK_MAX_HEALTH, TANK_MAX_SPEED));
     }
     //Spawn red tanks
     for (int i = 0; i < NUM_TANKS_RED; i++)
     {
-        tanks.push_back(Tank(&grid, start_red_x + ((i % max_rows) * spacing), start_red_y + ((i / max_rows) * spacing), RED, &tank_red, &smoke, 80, 80, tank_radius, TANK_MAX_HEALTH, TANK_MAX_SPEED));
+        tanks.emplace_back(Tank(&grid, start_red_x + ((i % max_rows) * spacing), start_red_y + ((i / max_rows) * spacing), RED, &tank_red, &smoke, 80, 80, tank_radius, TANK_MAX_HEALTH, TANK_MAX_SPEED));
     }
     for (Tank& tank : tanks)
     {
         tank.grid->addTank2Cell(&tank);
-        QNode* x = new QNode(tank.position, &tank);
         allTanksQTree->insertNode(&tank);
         if (tank.allignment == RED)
         {
@@ -214,9 +109,9 @@ void Game::Init()
             blueTanks.emplace_back(&tank);
         }
     }
-    particle_beams.push_back(Particle_beam(vec2(SCRWIDTH / 2, SCRHEIGHT / 2), vec2(100, 50), &particle_beam_sprite, PARTICLE_BEAM_HIT_VALUE));
-    particle_beams.push_back(Particle_beam(vec2(80, 80), vec2(100, 50), &particle_beam_sprite, PARTICLE_BEAM_HIT_VALUE));
-    particle_beams.push_back(Particle_beam(vec2(1200, 600), vec2(100, 50), &particle_beam_sprite, PARTICLE_BEAM_HIT_VALUE));
+    particle_beams.emplace_back(Particle_beam(vec2(SCRWIDTH / 2, SCRHEIGHT / 2), vec2(100, 50), &particle_beam_sprite, PARTICLE_BEAM_HIT_VALUE));
+    particle_beams.emplace_back(Particle_beam(vec2(80, 80), vec2(100, 50), &particle_beam_sprite, PARTICLE_BEAM_HIT_VALUE));
+    particle_beams.emplace_back(Particle_beam(vec2(1200, 600), vec2(100, 50), &particle_beam_sprite, PARTICLE_BEAM_HIT_VALUE));
 }
 
 // -----------------------------------------------------------
@@ -234,11 +129,11 @@ Game::~Game()
 // -----------------------------------------------------------
 // Iterates through all tanks and returns the closest enemy tank for the given tank
 // -----------------------------------------------------------
-Tank& Game::FindClosestEnemy(Tank& current_tank)
+const Tank& Game::find_closest_enemy(Tank& current_tank)
 {
     auto result = allTanksQTree->FindClosest(current_tank, nullptr, numeric_limits<float>::infinity());
-    auto closesttank = get<0>(result);
-    return *closesttank;
+    const auto closest_tank = get<0>(result);
+    return *closest_tank;
 }
 
 // -----------------------------------------------------------
@@ -269,7 +164,7 @@ void Game::Update(float deltaTime)
     rockets.erase(std::remove_if(rockets.begin(), rockets.end(), [](const Rocket& rocket) { return !rocket.active; }), rockets.end());
 
     //Update particle beams
-    update_partical_beams();
+    update_particle_beams();
 
     //Update explosion sprites and remove when done with remove erase idiom
     //for (Explosion& _explosion : explosions)
@@ -299,6 +194,7 @@ void Game::Draw()
     tbb::parallel_for(tbb::blocked_range<int>(0, NUM_TANKS_BLUE + NUM_TANKS_RED), [&](tbb::blocked_range<int> r) {
         for (int i = r.begin(); i < r.end(); ++i)
         {
+            scoped_lock(mtx);
             tanks.at(i).Draw(screen);
 
             vec2 tPos = tanks.at(i).Get_Position();
@@ -314,6 +210,7 @@ void Game::Draw()
     tbb::parallel_for(tbb::blocked_range<int>(0, rockets.size()), [&](tbb::blocked_range<int> r) {
         for (int i = r.begin(); i < r.end(); ++i)
         {
+            scoped_lock(mtx);
             rockets[i].Draw(screen);
         }
     });
@@ -323,6 +220,7 @@ void Game::Draw()
     tbb::parallel_for(tbb::blocked_range<int>(0, smokes.size()), [&](tbb::blocked_range<int> r) {
         for (int i = r.begin(); i < r.end(); ++i)
         {
+            scoped_lock(mtx);
             smokes[i].Draw(screen);
         }
     });
@@ -332,6 +230,7 @@ void Game::Draw()
     tbb::parallel_for(tbb::blocked_range<int>(0, particle_beams.size()), [&](tbb::blocked_range<int> r) {
         for (int i = r.begin(); i < r.end(); ++i)
         {
+            scoped_lock(mtx);
             particle_beams[i].Draw(screen);
         }
     });
@@ -341,6 +240,7 @@ void Game::Draw()
     tbb::parallel_for(tbb::blocked_range<int>(0, explosions.size()), [&](tbb::blocked_range<int> r) {
         for (int i = r.begin(); i < r.end(); ++i)
         {
+            scoped_lock(mtx);
             explosions[i].Draw(screen);
         }
     });
@@ -387,8 +287,7 @@ void BattleSim::Game::UpdateTanks()
     {
         if (tank.active)
         {
-            //QuadTreebasedColision
-            GPGPU(&tank);
+            //QuadTree based Collision
             /*  vector<Tank*> allNodesInRange;
             allNodesInRange = allTanksQTree->FindNodesInRange(tank, allNodesInRange, tank.collision_radius);
             if (allNodesInRange.size() > 0)
@@ -405,8 +304,8 @@ void BattleSim::Game::UpdateTanks()
             allTanksQTree->insertNode(&tank);
             if (tank.Rocket_Reloaded())
             {
-                Tank& target = FindClosestEnemy(tank);
-                rockets.push_back(
+                const Tank& target = find_closest_enemy(tank);
+                rockets.emplace_back(
                     Rocket(&grid, tank.position, (target.Get_Position() - tank.position).normalized() * 3, rocket_radius,
                            tank.allignment, ((tank.allignment == RED) ? &rocket_red : &rocket_blue)));
                 tank.Reload_Rocket();
@@ -424,10 +323,10 @@ void BattleSim::Game::UpdateRockets()
         if (rocket.hitTarget)
         {
             Tank* tank = rocket.hitTank;
-            explosions.push_back(Explosion(&explosion, tank->position));
+            explosions.emplace_back(Explosion(&explosion, tank->position));
             if (tank->hit(ROCKET_HIT_VALUE))
             {
-                smokes.push_back(Smoke(smoke, tank->position - vec2(0, 48)));
+                smokes.emplace_back(Smoke(smoke, tank->position - vec2(0, 48)));
             }
             rocket.active = false;
         }
@@ -436,7 +335,7 @@ void BattleSim::Game::UpdateRockets()
     }
 }
 
-void BattleSim::Game::update_partical_beams()
+void BattleSim::Game::update_particle_beams()
 {
     tbb::parallel_for(tbb::blocked_range<int>(0, particle_beams.size()), [&](tbb::blocked_range<int> r) {
         for (int i = r.begin(); i < r.end(); ++i)
@@ -453,7 +352,7 @@ void BattleSim::Game::update_partical_beams()
                 {
                     if (tank.hit(particle_beam.damage))
                     {
-                        smokes.push_back(Smoke(smoke, tank.position - vec2(0, 48)));
+                        smokes.emplace_back(Smoke(smoke, tank.position - vec2(0, 48)));
                     }
                 }
             }
@@ -546,25 +445,14 @@ void BattleSim::Game::draw_red_health()
 
 void BattleSim::Game::draw_health_bars(int i, char color, int health)
 {
-    int health_bar_start_x = i * (HEALTH_BAR_WIDTH + HEALTH_BAR_SPACING) + HEALTH_BARS_OFFSET_X;
-    int health_bar_start_y = (color == 'b') ? 0 : (SCRHEIGHT - HEALTH_BAR_HEIGHT) - 1;
-    int health_bar_end_x = health_bar_start_x + HEALTH_BAR_WIDTH;
-    int health_bar_end_y = (color == 'b') ? HEALTH_BAR_HEIGHT : SCRHEIGHT - 1;
+   const int health_bar_start_x = i * (HEALTH_BAR_WIDTH + HEALTH_BAR_SPACING) + HEALTH_BARS_OFFSET_X;
+   const int health_bar_start_y = (color == 'b') ? 0 : (SCRHEIGHT - HEALTH_BAR_HEIGHT) - 1;
+   const int health_bar_end_x = health_bar_start_x + HEALTH_BAR_WIDTH;
+   const int health_bar_end_y = (color == 'b') ? HEALTH_BAR_HEIGHT : SCRHEIGHT - 1;
 
     screen->Bar(health_bar_start_x, health_bar_start_y, health_bar_end_x, health_bar_end_y, REDMASK);
     screen->Bar(health_bar_start_x, health_bar_start_y + (int)((double)HEALTH_BAR_HEIGHT * (1 - ((double)health / (double)TANK_MAX_HEALTH))),
                 health_bar_end_x, health_bar_end_y, GREENMASK);
-}
-
-void BattleSim::Game::GPGPU(Tank* tank)
-{
-    int cellpos = tank->CellY * maximumUnitsInCell * tank->CellX - maximumUnitsInCell;
-    maximumUnitsInCell;
-    for (int i = 0; i < maximumUnitsInCell; i++)
-    {
-        Xgrid[cellpos] = tank->position.x;
-        Ygrid[cellpos] = tank->position.y;
-    }
 }
 
 // -----------------------------------------------------------
@@ -582,6 +470,6 @@ void Game::Tick(float deltaTime)
 
     //Print frame count
     frame_count++;
-    string frame_count_string = "FRAME: " + std::to_string(frame_count);
+    const string frame_count_string = "FRAME: " + std::to_string(frame_count);
     frame_count_font->Print(screen, frame_count_string.c_str(), 350, 580);
 }

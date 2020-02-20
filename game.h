@@ -15,9 +15,6 @@ class Game
 {
 
   public:
-    float* posistionX = (float*)malloc(sizeof(float));
-    float* posistionY = (float*)malloc(sizeof(float));
-    typedef struct tankposistion tankposistions[50];
     ~Game();
     void SetTarget(Surface* surface) { screen = surface; }
     void Init();
@@ -28,15 +25,14 @@ class Game
     void MeasurePerformance();
     void UpdateTanks();
     void UpdateRockets();
-    void update_partical_beams();
+    void update_particle_beams();
     std::vector<LinkedList> bucket_sort(std::vector<Tank*>& unsortedTanks, int numberofbuckets);
     std::vector<int> counting_sort(const vector<Tank*>& in);
     void sort_health_bars();
     void draw_blue_health();
     void draw_red_health();
     void draw_health_bars(int i, char color, int health);
-    void GPGPU(Tank*);
-    Tank& FindClosestEnemy(Tank& current_tank);
+    const Tank& find_closest_enemy(Tank& current_tank);
 
     void MouseUp(int button)
     { /* implement if you want to detect mouse button presses */
@@ -70,13 +66,6 @@ class Game
     vector<Tank*> redTanks;
     Font* frame_count_font;
 
-    float* GridCellY[1000];
-    static const int numberOfCells = 250;
-    static const int maximumUnitsInCell = 40;
-    static const int demensions = 2;
-    int gridarrys = numberOfCells * numberOfCells * maximumUnitsInCell * demensions;
-    float Xgrid[numberOfCells * numberOfCells * maximumUnitsInCell * demensions];
-    float Ygrid[numberOfCells * numberOfCells * maximumUnitsInCell * demensions];
     long long frame_count = 0;
     Grid grid;
     static const int sizeOfCell = 26;
